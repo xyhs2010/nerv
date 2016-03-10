@@ -1,0 +1,18 @@
+html {
+    font-size: 20px;
+}
+
+body {
+    text-align: center;
+}
+
+table {
+    margin: auto;
+}
+
+td {
+    width: 6rem;
+    height: 3rem;
+    font-size: 1.2rem;
+    text-align: center;
+}
