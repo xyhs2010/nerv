@@ -89,6 +89,7 @@ table.updateArray = function (nodeArray) {
 }
 
 table.calculate = function (array) {
+    var flag = false;
     for (var i = 0; i < array.length - 1; i++) {
         var elem1 = array[i];
         var elem2 = array[i + 1];
@@ -99,10 +100,10 @@ table.calculate = function (array) {
                 flagWin = true
             }
             array.push(0);
-            return true;
+            flag = true;
         }
     }
-    return false;
+    return flag;
 }
 
 table.handleKeyDown = function(keyNum) {
