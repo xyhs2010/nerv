@@ -13,4 +13,4 @@ I expect are listed below:
 *  Write a judgement whether bullets touches the aircraft;
 *  Add scoring system;
 
-Once I finish a step, I'll make a commit on [barragegame](github.com/xyhs2010/barragegame/).
+Once I finish a step, I'll make a commit on [barragegame](http://github.com/xyhs2010/barragegame/).
