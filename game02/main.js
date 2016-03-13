@@ -19,8 +19,8 @@ var colorTable = {
     2048 : "#FFFFFF"
 };
 
-var clientWidth = window.screen.width;
-var clientHeight = window.screen.height;
+var clientWidth = document.documentElement.clientWidth;
+var clientHeight = document.documentElement.clientHeight;
 var clientScale = clientWidth < clientHeight ? clientWidth : clientHeight;
 document.documentElement.style.fontSize = Math.floor(clientScale / 32) + "px";
 
@@ -106,8 +106,13 @@ table.calculate = function (array) {
     return flag;
 }
 
+// handleKeyDown
+addEventListener("keydown", function (e) {
+    var keyNum = window.event ? e.keyCode : e.which;
+    table.handleKeyDown(keyNum);
+});
+
 table.handleKeyDown = function(keyNum) {
-    flagLose = false;
     var ifVert = false;
     var ifInv = false;
     switch (keyNum) {
@@ -131,6 +136,48 @@ table.handleKeyDown = function(keyNum) {
             return;
             break;
     }
+    table.showUp(ifVert, ifInv);
+}
+
+// handle touch event
+var startPoint = [];
+var pathArc = [];
+
+addEventListener("touchstart", function (e) {
+    e.preventDefault();
+    if (e.touches != null) {
+        startPoint[0] = e.touches[0].clientX;
+        startPoint[1] = e.touches[0].clientY;
+    }
+}, false);
+
+addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    if (e.touches != null) {
+        if (startPoint.length > 0) {
+            pathArc[0] = e.touches[0].clientX - startPoint[0];
+            pathArc[1] = e.touches[0].clientY - startPoint[1];
+        }
+    }
+}, false);
+
+addEventListener("touchend", function (e) {
+    e.preventDefault();
+    var ifVert = false;
+    var ifInv = false;
+    startPoint = [];
+    if (pathArc[0] + pathArc[1] > 0) {
+        ifInv = true;
+    }
+    if (Math.abs(pathArc[0]) < Math.abs(pathArc[1])) {
+        ifVert = true;
+    }
+    table.showUp(ifVert, ifInv);
+}, false);
+
+// show up
+table.showUp = function(ifVert, ifInv) {
+    flagLose = false;
     var nodeArray = new Array();
     var result = false;
     if (ifVert) {
@@ -179,13 +226,9 @@ table.handleKeyDown = function(keyNum) {
             }
         }
     }
-}
+};
 
-document.onkeydown = function(e) {
-    var keyNum = window.event ? e.keyCode : e.which;
-    table.handleKeyDown(keyNum);
-}
-
+// main process
 for (var i = 0; i < KEY_TABLE_HEIGHT; i++) {
     var tr = document.createElement("tr");
     for (var j = 0; j < KEY_TABLE_WIDTH; j++) {
