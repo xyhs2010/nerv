@@ -31,7 +31,7 @@ static void help()
 }
 
 Mat src, dst;
-int curve[256];
+float curve[256];
 
 float windowFunc(float x) {
 #ifdef DEBUG
@@ -39,23 +39,24 @@ float windowFunc(float x) {
         exit(1);
     }
 #endif
-    return (sin(x * M_PI / 2) + 1) * 128;
+    return (sin(x * M_PI / 2) + 1) * 0.5;
 }
 
 int winCenter = 128;
 int winHalfWid = 127;
 
 void calcCurve() {
-    int res;
-    for (int i = 0; i < 256; i++) {
+    float res;
+    curve[0] = 0;
+    for (int i = 1; i < 256; i++) {
         if (i <= winCenter - winHalfWid) {
             res = 0;
         } else if ( i >= winCenter + winHalfWid) {
-            res = 255;
+            res = 1;
         } else {
             res = windowFunc((i - winCenter) / ((float)winHalfWid)); 
         }
-        curve[i] = res;
+        curve[i] = res * 256 / i;
     }
 }
 
@@ -333,9 +334,12 @@ static void OpenClose(int, void*)
                 MatIterator_<Vec3b> it, end;
                 for (it=expose.begin<Vec3b>(), end=expose.end<Vec3b>(); it != end; ++it)
                 {
-                        (*it)[0] = curve[(*it)[0]];
-                        (*it)[1] = curve[(*it)[1]];
-                        (*it)[2] = curve[(*it)[2]];
+                    int mean = (*it)[0] + (*it)[1] + (*it)[2];
+                    mean = mean / 3;
+                    float rate = curve[mean];
+                    (*it)[0] = (*it)[0] * rate > 255 ? 255 : (*it)[0] * rate;
+                    (*it)[1] = (*it)[1] * rate > 255 ? 255 : (*it)[1] * rate;
+                    (*it)[2] = (*it)[2] * rate > 255 ? 255 : (*it)[2] * rate;
                 }
                 break;
             }
@@ -362,9 +366,6 @@ static void OpenClose(int, void*)
     imshow("strength", expose);
     //showMultipleImages("src/darken", 2, src, expose);
 
-    return;
-
-	
 
 	Mat dis = tmp.clone();
 
