@@ -8,3 +8,5 @@ An Stone-scissors-cloth game.
 Hero vs Monster game.
 ## game04
 A little game played on mobile device.
+## imageEnhance
+Make document scanning more vivid.
