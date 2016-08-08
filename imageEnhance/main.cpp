@@ -51,119 +51,10 @@ void showTwoImages(char *name, Mat &image1, Mat &image2);
 #define max_uchar(a, b) (((a) < (b)) ? (b) : (a))
 
 //图像增强算法
-static void OpenClose(int, void*)
-{
-
-	double sigma = 3, threshold = 5, amount = 0.25;
-	Mat original = src.clone();
-    Mat tmp = src.clone();
-
-    calcEnhance();
-	//图像滤波
-	//可以为双边滤波，guided image filter，但双边滤波速度较慢
-	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
-	int r = 2; // try r=2, 4, or 8
-	double eps = 0.1 * 0.1; // try eps=0.1^2, 0.2^2, 0.4^2
-
-	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
-	tmp = guidedFilter(original, original, r, eps); // guided image filter
-	
-
-    Mat expose = tmp.clone();
-    float strength = (strength_pos - max_iters + 0.0) / max_iters;
-    int row = tmp.rows;
-    int step = tmp.step;
-
-    const int channels = expose.channels();
-    switch(channels) {
-        case 1: 
-            {
-                MatIterator_<uchar> it, end;
-                for (it=expose.begin<uchar>(), end=expose.end<uchar>(); it != end; ++it)
-                    *it += changeVal(*it, enhance[*it]);
-                break;
-            }
-        case 3:
-            {
-                MatIterator_<Vec3b> it, end;
-                for (it=expose.begin<Vec3b>(), end=expose.end<Vec3b>(); it != end; ++it)
-                {
-                    int mean = (*it)[0] + (*it)[1] + (*it)[2];
-                    mean = mean / 3;
-                    float rate = enhance[mean];
-                    (*it)[0] += changeVal((*it)[0], rate);
-                    (*it)[1] += changeVal((*it)[1], rate);
-                    (*it)[2] += changeVal((*it)[2], rate);
-                }
-                break;
-            }
-    }
-
-    imshow("strength", expose);
-    //showMultipleImages("src/darken", 2, src, expose);
-
-
-	Mat dis = tmp.clone();
-
-
-//  去除不同的光照
- 	int n = open_close_pos - max_iters;
- 	int an = n > 0 ? n : -n;
- 	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
- 	if (n < 0)
- 		morphologyEx(expose, dst, MORPH_OPEN, element);
- 	else
- 		morphologyEx(expose, dst, MORPH_CLOSE, element);
- 	imshow("Open/Close", dst);
- 	dis = n > 0 ? expose / dst * 255 : dst / expose * 255;
- 	imshow("before_dis1", dis);
-// 
-
-
-	//图像锐化
-	Mat ssrc = dis.clone();
-	Mat blurred; 
-	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
-	//bilateralFilter(ssrc, blurred, 10, 100, 100);
-	GaussianBlur(ssrc, blurred, Size(), sigma, sigma);
-	//blurred = guidedFilter(ssrc, ssrc, r, eps);
-	//medianBlur(ssrc, blurred, an*2+1);
-
-
-	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
-	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
-	ssrc.copyTo(sharpened, lowContrastMask);
-	imwrite("data/paper_save.jpg", sharpened);
-	/* imshow("diff", 255*abs(sharpened - ssrc)); */
-    imshow("diff", sharpened);
-	imwrite("data/res_s.jpg", ssrc);
-	imwrite("data/res.jpg", sharpened);
-
-	//图像黑白二值化，效果不好
-	Mat gray;
-	cvtColor(sharpened, gray, CV_BGR2GRAY);
-	/* showMultipleImages("src/smooth/res", 2, original, sharpened); */
-	//adaptiveThreshold(gray, gray, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 2);
-	//cv::threshold(gray, gray, 100, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-	
-}
+static void OpenClose(int, void*);
 
 // callback function for erode/dilate trackbar
-static void ErodeDilate(int, void*)
-{
-	int n = erode_dilate_pos - max_iters;
-	int an = n > 0 ? n : -n;
-	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
-	if (n < 0)
-		erode(src, dst, element);
-		//morphologyEx(src, dst, MORPH_OPEN, element);
-	else
-		dilate(src, dst, element);
-		//morphologyEx(src, dst, MORPH_CLOSE, element);
-	imshow("Erode/Dilate", dst);
-	Mat dis = n > 0 ? src / dst * 255: dst/src * 255;
-	imshow("dis_Erode", dis);
-}
+static void ErodeDilate(int, void*);
 
 
 
@@ -198,7 +89,7 @@ int main(int argc, char** argv)
 	createTrackbar("iterations", "Original", &open_close_pos, max_iters * 2 + 1, OpenClose);
 	/* createTrackbar("iterations", "Erode/Dilate", &erode_dilate_pos, max_iters * 2 + 1, ErodeDilate); */
 
-	createTrackbar("strength", "Original", &strength_pos, max_iters*2+1, OpenClose);
+	/* createTrackbar("strength", "Original", &strength_pos, max_iters*2+1, OpenClose); */
 	createTrackbar("windowmid", "Original", &winCenter, 255, OpenClose);
 	createTrackbar("windowhalfwid", "Original", &winHalfWid, 512, OpenClose);
 
@@ -498,4 +389,119 @@ void showTwoImages(char *name, Mat &image1, Mat &image2)
 	targetROI = dst(cv::Rect(image1.cols, 0, image1.cols, image1.rows));
 	image2.copyTo(targetROI);
 	imshow(name, dst);
+}
+
+//图像增强算法
+static void OpenClose(int, void*)
+{
+
+	double sigma = 3, threshold = 5, amount = 0.25;
+	Mat original = src.clone();
+    Mat tmp = src.clone();
+
+    calcEnhance();
+	//图像滤波
+	//可以为双边滤波，guided image filter，但双边滤波速度较慢
+	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
+	int r = 2; // try r=2, 4, or 8
+	double eps = 0.1 * 0.1; // try eps=0.1^2, 0.2^2, 0.4^2
+
+	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
+	tmp = guidedFilter(original, original, r, eps); // guided image filter
+	
+
+    Mat expose = tmp.clone();
+    float strength = (strength_pos - max_iters + 0.0) / max_iters;
+    int row = tmp.rows;
+    int step = tmp.step;
+
+    const int channels = expose.channels();
+    switch(channels) {
+        case 1: 
+            {
+                MatIterator_<uchar> it, end;
+                for (it=expose.begin<uchar>(), end=expose.end<uchar>(); it != end; ++it)
+                    *it += changeVal(*it, enhance[*it]);
+                break;
+            }
+        case 3:
+            {
+                MatIterator_<Vec3b> it, end;
+                for (it=expose.begin<Vec3b>(), end=expose.end<Vec3b>(); it != end; ++it)
+                {
+                    int mean = (*it)[0] + (*it)[1] + (*it)[2];
+                    mean = mean / 3;
+                    float rate = enhance[mean];
+                    (*it)[0] += changeVal((*it)[0], rate);
+                    (*it)[1] += changeVal((*it)[1], rate);
+                    (*it)[2] += changeVal((*it)[2], rate);
+                }
+                break;
+            }
+    }
+
+    imshow("strength", expose);
+    //showMultipleImages("src/darken", 2, src, expose);
+
+
+	Mat dis = tmp.clone();
+
+
+//  去除不同的光照
+ 	int n = open_close_pos - max_iters;
+ 	int an = n > 0 ? n : -n;
+ 	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
+ 	if (n < 0)
+ 		morphologyEx(expose, dst, MORPH_OPEN, element);
+ 	else
+ 		morphologyEx(expose, dst, MORPH_CLOSE, element);
+ 	imshow("Open/Close", dst);
+ 	dis = n > 0 ? expose / dst * 255 : dst / expose * 255;
+ 	imshow("before_dis1", dis);
+// 
+
+
+	//图像锐化
+	Mat ssrc = dis.clone();
+	Mat blurred; 
+	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
+	//bilateralFilter(ssrc, blurred, 10, 100, 100);
+	GaussianBlur(ssrc, blurred, Size(), sigma, sigma);
+	//blurred = guidedFilter(ssrc, ssrc, r, eps);
+	//medianBlur(ssrc, blurred, an*2+1);
+
+
+	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
+	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
+	ssrc.copyTo(sharpened, lowContrastMask);
+	imwrite("data/paper_save.jpg", sharpened);
+	/* imshow("diff", 255*abs(sharpened - ssrc)); */
+    imshow("diff", sharpened);
+	imwrite("data/res_s.jpg", ssrc);
+	imwrite("data/res.jpg", sharpened);
+
+	//图像黑白二值化，效果不好
+	Mat gray;
+	cvtColor(sharpened, gray, CV_BGR2GRAY);
+	/* showMultipleImages("src/smooth/res", 2, original, sharpened); */
+	//adaptiveThreshold(gray, gray, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 2);
+	//cv::threshold(gray, gray, 100, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+	
+}
+
+// callback function for erode/dilate trackbar
+static void ErodeDilate(int, void*)
+{
+	int n = erode_dilate_pos - max_iters;
+	int an = n > 0 ? n : -n;
+	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
+	if (n < 0)
+		erode(src, dst, element);
+		//morphologyEx(src, dst, MORPH_OPEN, element);
+	else
+		dilate(src, dst, element);
+		//morphologyEx(src, dst, MORPH_CLOSE, element);
+	imshow("Erode/Dilate", dst);
+	Mat dis = n > 0 ? src / dst * 255: dst/src * 255;
+	imshow("dis_Erode", dis);
 }
