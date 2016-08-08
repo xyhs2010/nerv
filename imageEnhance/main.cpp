@@ -409,8 +409,23 @@ static void OpenClose(int, void*)
 	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
 	tmp = guidedFilter(original, original, r, eps); // guided image filter
 	
+	Mat dis = tmp.clone();
 
-    Mat expose = tmp.clone();
+
+//  去除不同的光照
+ 	int n = open_close_pos - max_iters;
+ 	int an = n > 0 ? n : -n;
+ 	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
+ 	if (n < 0)
+ 		morphologyEx(tmp, dst, MORPH_OPEN, element);
+ 	else
+ 		morphologyEx(tmp, dst, MORPH_CLOSE, element);
+ 	imshow("Open/Close", dst);
+ 	dis = n > 0 ? tmp / dst * 255 : dst / tmp * 255;
+ 	imshow("before_dis1", dis);
+
+// 调色
+    Mat expose = dis.clone();
     float strength = (strength_pos - max_iters + 0.0) / max_iters;
     int row = tmp.rows;
     int step = tmp.step;
@@ -444,25 +459,12 @@ static void OpenClose(int, void*)
     //showMultipleImages("src/darken", 2, src, expose);
 
 
-	Mat dis = tmp.clone();
 
 
-//  去除不同的光照
- 	int n = open_close_pos - max_iters;
- 	int an = n > 0 ? n : -n;
- 	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
- 	if (n < 0)
- 		morphologyEx(expose, dst, MORPH_OPEN, element);
- 	else
- 		morphologyEx(expose, dst, MORPH_CLOSE, element);
- 	imshow("Open/Close", dst);
- 	dis = n > 0 ? expose / dst * 255 : dst / expose * 255;
- 	imshow("before_dis1", dis);
-// 
 
 
 	//图像锐化
-	Mat ssrc = dis.clone();
+	Mat ssrc = expose.clone();
 	Mat blurred; 
 	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
 	//bilateralFilter(ssrc, blurred, 10, 100, 100);
