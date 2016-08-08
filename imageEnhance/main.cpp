@@ -133,11 +133,11 @@ static void OpenClose(int, void*)
 	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
 	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
 	ssrc.copyTo(sharpened, lowContrastMask);
-	imwrite("paper_save.jpg", sharpened);
+	imwrite("data/paper_save.jpg", sharpened);
 	/* imshow("diff", 255*abs(sharpened - ssrc)); */
     imshow("diff", sharpened);
-	imwrite("res_s.jpg", ssrc);
-	imwrite("res.jpg", sharpened);
+	imwrite("data/res_s.jpg", ssrc);
+	imwrite("data/res.jpg", sharpened);
 
 	//图像黑白二值化，效果不好
 	Mat gray;
@@ -170,14 +170,14 @@ static void ErodeDilate(int, void*)
 
 int main(int argc, char** argv)
 {
-	cv::CommandLineParser parser(argc, argv, "{help h||}{ @image | ../data/baboon.jpg | }");
+	cv::CommandLineParser parser(argc, argv, "{help h||}{ @image | ./data/baboon.jpg | }");
 	if (parser.has("help"))
 	{
 		help();
 		return 0;
 	}
 	std::string filename = parser.get<std::string>("@image");
-	filename = "paper.jpg";
+	filename = "data/paper.jpg";
 	if ((src = imread(filename, 1)).empty())
 	{
 		help();
