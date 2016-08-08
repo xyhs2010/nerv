@@ -266,14 +266,10 @@ void calcEnhance() {
 
 int changeVal(int origin, float enhance) {
     origin -= 128;
-    int change = 0;
-    if (origin == 127 || origin == -128) {
-        change = 0;
-    } else if (origin > -128 && origin < 128 * enhance) {
-        change = 2 * enhance * (origin + 128) / (enhance + 1); 
-    } else if (origin < 127 && origin >= 128 * enhance) {
-        change = 2 * enhance * (origin - 128) / (enhance - 1);
-    }
+    
+    float lambda = M_PI / 256;
+    int change = enhance * cos(lambda * origin) / lambda;
+
     if (origin + change > 127)
         change = 127 - origin;
     else if (origin + change < -128)
