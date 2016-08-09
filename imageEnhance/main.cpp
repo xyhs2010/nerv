@@ -36,13 +36,13 @@ int erode_dilate_pos = 0;
 int Start_Strength = 14;
 int strength_pos = Start_Strength;
 
-//Í¼Ïñgamma½ÃÕı
+//å›¾åƒgammaçŸ«æ­£
 void MyGammaCorrection(Mat& src, Mat& dst, float fGamma);
 
-//Í¼ÏñÖ±·½Í¼¾ùºâ»¯£¬Ò²ÊÇÍ¼ÏñÔöÇ¿µÄÒ»ÖÖ
+//å›¾åƒç›´æ–¹å›¾å‡è¡¡åŒ–ï¼Œä¹Ÿæ˜¯å›¾åƒå¢å¼ºçš„ä¸€ç§
 static Mat calchistcontrol(vector<Mat> rgb);
 
-//ÆäËûµÄÍ¼ÏñÂË²¨Ëã·¨£¬L0ÂË²¨£¬¼ûhttp://www.cse.cuhk.edu.hk/~leojia/projects/L0smoothing/
+//å…¶ä»–çš„å›¾åƒæ»¤æ³¢ç®—æ³•ï¼ŒL0æ»¤æ³¢ï¼Œè§http://www.cse.cuhk.edu.hk/~leojia/projects/L0smoothing/
 cv::Mat L0Smoothing(cv::Mat &im8uc3, double lambda, double kappa);
 
 void showTwoImages(char *name, Mat &image1, Mat &image2);
@@ -50,7 +50,7 @@ void showTwoImages(char *name, Mat &image1, Mat &image2);
 #define min_uchar(a, b) (((a) < (b)) ? (a) : (b))
 #define max_uchar(a, b) (((a) < (b)) ? (b) : (a))
 
-//Í¼ÏñÔöÇ¿Ëã·¨
+//å›¾åƒå¢å¼ºç®—æ³•
 static void OpenClose(int, void*);
 
 // callback function for erode/dilate trackbar
@@ -168,7 +168,7 @@ int changeVal(int origin, float enhance) {
     return change;
 }
 
-//Í¼Ïñgamma½ÃÕı
+//å›¾åƒgammaçŸ«æ­£
 void MyGammaCorrection(Mat& src, Mat& dst, float fGamma)
 {
 	CV_Assert(src.data);
@@ -214,7 +214,7 @@ void MyGammaCorrection(Mat& src, Mat& dst, float fGamma)
 	}
 }
 
-//ÆäËûµÄÍ¼ÏñÂË²¨Ëã·¨£¬L0ÂË²¨£¬¼ûhttp://www.cse.cuhk.edu.hk/~leojia/projects/L0smoothing/
+//å…¶ä»–çš„å›¾åƒæ»¤æ³¢ç®—æ³•ï¼ŒL0æ»¤æ³¢ï¼Œè§http://www.cse.cuhk.edu.hk/~leojia/projects/L0smoothing/
 cv::Mat L0Smoothing(cv::Mat &im8uc3, double lambda = 2e-2, double kappa = 2.0) {
 	// convert the image to double format
 	int row = im8uc3.rows, col = im8uc3.cols;
@@ -309,16 +309,16 @@ cv::Mat L0Smoothing(cv::Mat &im8uc3, double lambda = 2e-2, double kappa = 2.0) {
 	return S;
 }
 
-//Í¼ÏñÖ±·½Í¼¾ùºâ»¯£¬Ò²ÊÇÍ¼ÏñÔöÇ¿µÄÒ»ÖÖ
+//å›¾åƒç›´æ–¹å›¾å‡è¡¡åŒ–ï¼Œä¹Ÿæ˜¯å›¾åƒå¢å¼ºçš„ä¸€ç§
 static Mat calchistcontrol(vector<Mat> rgb)
 {
 
 	vector<Mat> rgb_planes;
 	rgb_planes = rgb;
-	/// Éè¶¨binÊıÄ¿  
+	/// è®¾å®šbinæ•°ç›®  
 	int histSize = 255;
 
-	/// Éè¶¨È¡Öµ·¶Î§ ( R,G,B) )  
+	/// è®¾å®šå–å€¼èŒƒå›´ ( R,G,B) )  
 	float range[] = { 0, 255 };
 	const float* histRange = { range };
 
@@ -326,23 +326,23 @@ static Mat calchistcontrol(vector<Mat> rgb)
 
 	Mat r_hist, g_hist, b_hist;
 
-	/// ¼ÆËãÖ±·½Í¼:  
+	/// è®¡ç®—ç›´æ–¹å›¾:  
 	calcHist(&rgb_planes[0], 1, 0, Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate);
 	calcHist(&rgb_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate);
 	calcHist(&rgb_planes[2], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
 
-	// ´´½¨Ö±·½Í¼»­²¼  
+	// åˆ›å»ºç›´æ–¹å›¾ç”»å¸ƒ  
 	int hist_w = 400; int hist_h = 400;
 	int bin_w = cvRound((double)hist_w / histSize);
 
 	Mat histImage(hist_w, hist_h, CV_8UC3, Scalar(0, 0, 0));
 
-	/// ½«Ö±·½Í¼¹éÒ»»¯µ½·¶Î§ [ 0, histImage.rows ]  
+	/// å°†ç›´æ–¹å›¾å½’ä¸€åŒ–åˆ°èŒƒå›´ [ 0, histImage.rows ]  
 	normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
 	normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
 	normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
 
-	/// ÔÚÖ±·½Í¼»­²¼ÉÏ»­³öÖ±·½Í¼  
+	/// åœ¨ç›´æ–¹å›¾ç”»å¸ƒä¸Šç”»å‡ºç›´æ–¹å›¾  
 	// 	draw(r_hist, histSize, histImage, bin_w, hist_h, 1);
 	// 	draw(g_hist, histSize, histImage, bin_w, hist_h, 2);
 	// 	draw(b_hist, histSize, histImage, bin_w, hist_h, 3);
@@ -391,7 +391,7 @@ void showTwoImages(char *name, Mat &image1, Mat &image2)
 	imshow(name, dst);
 }
 
-//Í¼ÏñÔöÇ¿Ëã·¨
+//å›¾åƒå¢å¼ºç®—æ³•
 static void OpenClose(int, void*)
 {
 
@@ -400,9 +400,9 @@ static void OpenClose(int, void*)
     Mat tmp = src.clone();
 
     calcEnhance();
-	//Í¼ÏñÂË²¨
-	//¿ÉÒÔÎªË«±ßÂË²¨£¬guided image filter£¬µ«Ë«±ßÂË²¨ËÙ¶È½ÏÂı
-	//bilateralFilter(original, src, 10, 20, 20); //Ë«±ßÂË²¨
+	//å›¾åƒæ»¤æ³¢
+	//å¯ä»¥ä¸ºåŒè¾¹æ»¤æ³¢ï¼Œguided image filterï¼Œä½†åŒè¾¹æ»¤æ³¢é€Ÿåº¦è¾ƒæ…¢
+	//bilateralFilter(original, src, 10, 20, 20); //åŒè¾¹æ»¤æ³¢
 	int r = 2; // try r=2, 4, or 8
 	double eps = 0.1 * 0.1; // try eps=0.1^2, 0.2^2, 0.4^2
 
@@ -412,7 +412,7 @@ static void OpenClose(int, void*)
 	Mat dis = tmp.clone();
 
 
-//  È¥³ı²»Í¬µÄ¹âÕÕ
+//  å»é™¤ä¸åŒçš„å…‰ç…§
  	int n = open_close_pos - max_iters;
  	int an = n > 0 ? n : -n;
  	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
@@ -424,7 +424,7 @@ static void OpenClose(int, void*)
  	dis = n > 0 ? tmp / dst * 255 : dst / tmp * 255;
  	imshow("before_dis1", dis);
 
-// µ÷É«
+// è°ƒè‰²
     Mat expose = dis.clone();
     float strength = (strength_pos - max_iters + 0.0) / max_iters;
     int row = tmp.rows;
@@ -463,10 +463,10 @@ static void OpenClose(int, void*)
 
 
 
-	//Í¼ÏñÈñ»¯
+	//å›¾åƒé”åŒ–
 	Mat ssrc = expose.clone();
 	Mat blurred; 
-	//¶àÖÖ¿ÉÄÜµÄÂË²¨Ëã·¨£¬Ë«±ßÂË²¨£¬¸ßË¹ÂË²¨£¬guided image filter£¬ÖĞÖµÂË²¨
+	//å¤šç§å¯èƒ½çš„æ»¤æ³¢ç®—æ³•ï¼ŒåŒè¾¹æ»¤æ³¢ï¼Œé«˜æ–¯æ»¤æ³¢ï¼Œguided image filterï¼Œä¸­å€¼æ»¤æ³¢
 	//bilateralFilter(ssrc, blurred, 10, 100, 100);
 	GaussianBlur(ssrc, blurred, Size(), sigma, sigma);
 	//blurred = guidedFilter(ssrc, ssrc, r, eps);
@@ -482,7 +482,7 @@ static void OpenClose(int, void*)
 	imwrite("data/res_s.jpg", ssrc);
 	imwrite("data/res.jpg", sharpened);
 
-	//Í¼ÏñºÚ°×¶şÖµ»¯£¬Ğ§¹û²»ºÃ
+	//å›¾åƒé»‘ç™½äºŒå€¼åŒ–ï¼Œæ•ˆæœä¸å¥½
 	Mat gray;
 	cvtColor(sharpened, gray, CV_BGR2GRAY);
 	/* showMultipleImages("src/smooth/res", 2, original, sharpened); */
