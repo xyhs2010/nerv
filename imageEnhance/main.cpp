@@ -16,9 +16,11 @@
 using namespace std;
 using namespace cv;
 
-static void help();
+static void help(cv::CommandLineParser *);
 
 Mat src, dst;
+std::string outputPath;
+
 float enhance[256];
 
 int winCenter = 128;
@@ -37,7 +39,7 @@ int Start_Strength = 14;
 int strength_pos = Start_Strength;
 
 //图像gamma矫正
-void MyGammaCorrection(Mat& src, Mat& dst, float fGamma);
+void MyGammaCorrection(Mat&, Mat&, float fGamma);
 
 //图像直方图均衡化，也是图像增强的一种
 static Mat calchistcontrol(vector<Mat> rgb);
@@ -61,17 +63,17 @@ static void ErodeDilate(int, void*);
 
 int main(int argc, char** argv)
 {
-	cv::CommandLineParser parser(argc, argv, "{help h||}{ @image | ./data/baboon.jpg | }");
-	if (parser.has("help"))
+	cv::CommandLineParser parser(argc, argv, "{h help usage ?| |print this message}{ @inputImage| |image to process}{@outputImage| |image to be saved}");
+	if (parser.has("h"))
 	{
-		help();
+		help(&parser);
 		return 0;
 	}
-	std::string filename = parser.get<std::string>("@image");
-	filename = "data/paper.jpg";
+	std::string filename = parser.get<std::string>("@inputImage");
+    outputPath = parser.get<std::string>("@outputImage");
 	if ((src = imread(filename, 1)).empty())
 	{
-		help();
+		help(&parser);
 		return -1;
 	}
 	imshow("Original", src);
@@ -117,13 +119,13 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-static void help()
+static void help(cv::CommandLineParser *parser)
 {
 
-	printf("\nShow off image morphology: erosion, dialation, open and close\n"
-		"Call:\n   morphology2 [image]\n"
-		"This program also shows use of rect, ellipse and cross kernels\n\n");
-	printf("Hot keys: \n"
+	printf("\nEnhance document image\n");
+    parser->printMessage();
+	printf("This program also shows use of rect, ellipse and cross kernels\n\n"
+        "Hot keys: \n"
 		"\tESC - quit the program\n"
 		"\tr - use rectangle structuring element\n"
 		"\te - use elliptic structuring element\n"
@@ -417,11 +419,11 @@ static void OpenClose(int, void*)
  	int an = n > 0 ? n : -n;
  	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
  	if (n < 0)
- 		morphologyEx(tmp, dst, MORPH_OPEN, element);
+ 		morphologyEx(tmp, dis, MORPH_OPEN, element);
  	else
- 		morphologyEx(tmp, dst, MORPH_CLOSE, element);
- 	imshow("Open/Close", dst);
- 	dis = n > 0 ? tmp / dst * 255 : dst / tmp * 255;
+ 		morphologyEx(tmp, dis, MORPH_CLOSE, element);
+ 	imshow("Open/Close", dis);
+ 	dis = n > 0 ? tmp / dis * 255 : dis / tmp * 255;
  	imshow("before_dis1", dis);
 
 // 调色
@@ -460,9 +462,6 @@ static void OpenClose(int, void*)
 
 
 
-
-
-
 	//图像锐化
 	Mat ssrc = expose.clone();
 	Mat blurred; 
@@ -476,11 +475,13 @@ static void OpenClose(int, void*)
 	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
 	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
 	ssrc.copyTo(sharpened, lowContrastMask);
-	imwrite("data/paper_save.jpg", sharpened);
+	/* imwrite("data/paper_save.jpg", sharpened); */
 	/* imshow("diff", 255*abs(sharpened - ssrc)); */
     imshow("diff", sharpened);
-	imwrite("data/res_s.jpg", ssrc);
-	imwrite("data/res.jpg", sharpened);
+	/* imwrite("data/res_s.jpg", ssrc); */
+	/* imwrite("data/res.jpg", sharpened); */
+    if (!outputPath.empty())
+        imwrite(outputPath, sharpened);
 
 	//图像黑白二值化，效果不好
 	Mat gray;
