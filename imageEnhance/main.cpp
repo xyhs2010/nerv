@@ -23,8 +23,8 @@ std::string outputPath;
 
 float enhance[256];
 
-int winCenter = 128;
-int winHalfWid = 127;
+int winCenter = 200;
+int winHalfWid = 80;
 
 void calcEnhance();
 int changeVal(int origin, float enhance);
@@ -63,7 +63,7 @@ static void ErodeDilate(int, void*);
 
 int main(int argc, char** argv)
 {
-	cv::CommandLineParser parser(argc, argv, "{h help usage ?| |print this message}{ @inputImage| |image to process}{@outputImage| |image to be saved}");
+	cv::CommandLineParser parser(argc, argv, "{h help usage ?| |print this message}{i interact| |interaction mode}{ @inputImage| |image to process}{@outputImage| |image to be saved}");
 	if (parser.has("h"))
 	{
 		help(&parser);
@@ -76,10 +76,24 @@ int main(int argc, char** argv)
 		help(&parser);
 		return -1;
 	}
+    int maxL = src.rows > src.cols ? src.rows : src.cols;
+	if (!parser.has("i")) {
+        open_close_pos = max_iters + maxL / 40;
+        erode_dilate_pos = open_close_pos;
+        OpenClose(open_close_pos, 0);
+        return 0;
+    }
+    if (maxL > 1080) {
+        float rate = 1000.0/maxL;
+        Size dsize = Size(src.cols*rate,src.rows*rate);
+        Mat scaled = Mat(dsize, CV_8UC3);
+        resize(src, scaled,dsize);
+        src = scaled;
+    }
 	imshow("Original", src);
 
-	Mat gamma;
-	float g = 1/2.2;
+	/* Mat gamma; */
+	/* float g = 1/2.2; */
 	//MyGammaCorrection(src, gamma, g);
 	
 
@@ -119,6 +133,103 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+//图像增强算法
+static void OpenClose(int, void*)
+{
+
+	double sigma = 3, threshold = 5, amount = 0.25;
+	Mat original = src.clone();
+    Mat tmp = src.clone();
+
+    calcEnhance();
+	//图像滤波
+	//可以为双边滤波，guided image filter，但双边滤波速度较慢
+	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
+	int r = 2; // try r=2, 4, or 8
+	double eps = 0.1 * 0.1; // try eps=0.1^2, 0.2^2, 0.4^2
+
+	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
+	tmp = guidedFilter(original, original, r, eps); // guided image filter
+	
+	Mat dis = tmp.clone();
+
+
+//  去除不同的光照
+ 	int n = open_close_pos - max_iters;
+ 	int an = n > 0 ? n : -n;
+ 	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
+	GaussianBlur(dis, dis, Size(), sigma, sigma);
+ 	if (n < 0)
+ 		morphologyEx(dis, dis, MORPH_OPEN, element);
+ 	else
+ 		morphologyEx(dis, dis, MORPH_CLOSE, element);
+ 	imshow("Open/Close", dis);
+ 	dis = n > 0 ? tmp / dis * 255 : dis / tmp * 255;
+ 	imshow("before_dis1", dis);
+
+// 调色
+    Mat expose = dis.clone();
+
+    const int channels = expose.channels();
+    switch(channels) {
+        case 1: 
+            {
+                MatIterator_<uchar> it, end;
+                for (it=expose.begin<uchar>(), end=expose.end<uchar>(); it != end; ++it)
+                    *it = changeVal(*it, enhance[*it]);
+                break;
+            }
+        case 3:
+            {
+                MatIterator_<Vec3b> it, end;
+                for (it=expose.begin<Vec3b>(), end=expose.end<Vec3b>(); it != end; ++it)
+                {
+                    /* int mean = (*it)[0] + (*it)[1] + (*it)[2]; */
+                    /* mean = mean / 3; */
+                    /* float rate = enhance[mean]; */
+                    (*it)[0] = changeVal((*it)[0], enhance[(*it)[0]]);
+                    (*it)[1] = changeVal((*it)[1], enhance[(*it)[1]]);
+                    (*it)[2] = changeVal((*it)[2], enhance[(*it)[2]]);
+                }
+                break;
+            }
+    }
+
+    imshow("strength", expose);
+    //showMultipleImages("src/darken", 2, src, expose);
+
+
+
+	//图像锐化
+	Mat ssrc = expose.clone();
+	Mat blurred; 
+	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
+	//bilateralFilter(ssrc, blurred, 10, 100, 100);
+	GaussianBlur(ssrc, blurred, Size(), sigma, sigma);
+	//blurred = guidedFilter(ssrc, ssrc, r, eps);
+	//medianBlur(ssrc, blurred, an*2+1);
+
+
+	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
+	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
+	ssrc.copyTo(sharpened, lowContrastMask);
+	/* imwrite("data/paper_save.jpg", sharpened); */
+	/* imshow("diff", 255*abs(sharpened - ssrc)); */
+    imshow("diff", sharpened);
+	/* imwrite("data/res_s.jpg", ssrc); */
+	/* imwrite("data/res.jpg", sharpened); */
+    if (!outputPath.empty())
+        imwrite(outputPath, sharpened);
+
+	//图像黑白二值化，效果不好
+	Mat gray;
+	cvtColor(sharpened, gray, CV_BGR2GRAY);
+	/* showMultipleImages("src/smooth/res", 2, original, sharpened); */
+	//adaptiveThreshold(gray, gray, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 2);
+	//cv::threshold(gray, gray, 100, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+	
+}
+
 static void help(cv::CommandLineParser *parser)
 {
 
@@ -144,30 +255,39 @@ float windowFunc(float x) {
 
 void calcEnhance() {
     float res;
-    enhance[0] = 0;
-    for (int i = 1; i < 256; i++) {
-        if (i <= winCenter - winHalfWid) {
+    int left = winCenter - winHalfWid > 0 ? winCenter - winHalfWid : 0;
+    int right = winCenter + winHalfWid < 255 ? winCenter + winHalfWid : 255;
+    for (int i = 0; i < 256; i++) {
+        if (i <= left) {
             res = -1;
-        } else if ( i >= winCenter + winHalfWid) {
+        } else if ( i >= right) {
             res = 1;
+        } else if (i < winCenter){
+            res = windowFunc((i - winCenter) / ((float)(winCenter - left))); 
         } else {
-            res = windowFunc((i - winCenter) / ((float)winHalfWid)); 
+            res = windowFunc((i - winCenter) / ((float)(right - winCenter))); 
         }
         enhance[i] = res;
     }
 }
 
 int changeVal(int origin, float enhance) {
-    origin -= 128;
+    /* origin -= 128; */
     
-    float lambda = M_PI / 256;
-    int change = enhance * cos(lambda * origin) / lambda;
+    /* float lambda = M_PI / 256; */
+    /* int change = enhance * cos(lambda * origin) / lambda; */
 
-    if (origin + change > 127)
-        change = 127 - origin;
-    else if (origin + change < -128)
-        change = -128 - origin;
-    return change;
+    /* if (origin + change > 127) */
+    /*     change = 127 - origin; */
+    /* else if (origin + change < -128) */
+    /*     change = -128 - origin; */
+    /* return change; */
+    int val = (enhance + 1) * 128;
+    if (val > 255)
+        val = 255;
+    if (val < 0)
+        val = 0;
+    return val;
 }
 
 //图像gamma矫正
@@ -391,105 +511,6 @@ void showTwoImages(char *name, Mat &image1, Mat &image2)
 	targetROI = dst(cv::Rect(image1.cols, 0, image1.cols, image1.rows));
 	image2.copyTo(targetROI);
 	imshow(name, dst);
-}
-
-//图像增强算法
-static void OpenClose(int, void*)
-{
-
-	double sigma = 3, threshold = 5, amount = 0.25;
-	Mat original = src.clone();
-    Mat tmp = src.clone();
-
-    calcEnhance();
-	//图像滤波
-	//可以为双边滤波，guided image filter，但双边滤波速度较慢
-	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
-	int r = 2; // try r=2, 4, or 8
-	double eps = 0.1 * 0.1; // try eps=0.1^2, 0.2^2, 0.4^2
-
-	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
-	tmp = guidedFilter(original, original, r, eps); // guided image filter
-	
-	Mat dis = tmp.clone();
-
-
-//  去除不同的光照
- 	int n = open_close_pos - max_iters;
- 	int an = n > 0 ? n : -n;
- 	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
- 	if (n < 0)
- 		morphologyEx(tmp, dis, MORPH_OPEN, element);
- 	else
- 		morphologyEx(tmp, dis, MORPH_CLOSE, element);
- 	imshow("Open/Close", dis);
- 	dis = n > 0 ? tmp / dis * 255 : dis / tmp * 255;
- 	imshow("before_dis1", dis);
-
-// 调色
-    Mat expose = dis.clone();
-    float strength = (strength_pos - max_iters + 0.0) / max_iters;
-    int row = tmp.rows;
-    int step = tmp.step;
-
-    const int channels = expose.channels();
-    switch(channels) {
-        case 1: 
-            {
-                MatIterator_<uchar> it, end;
-                for (it=expose.begin<uchar>(), end=expose.end<uchar>(); it != end; ++it)
-                    *it += changeVal(*it, enhance[*it]);
-                break;
-            }
-        case 3:
-            {
-                MatIterator_<Vec3b> it, end;
-                for (it=expose.begin<Vec3b>(), end=expose.end<Vec3b>(); it != end; ++it)
-                {
-                    int mean = (*it)[0] + (*it)[1] + (*it)[2];
-                    mean = mean / 3;
-                    float rate = enhance[mean];
-                    (*it)[0] += changeVal((*it)[0], rate);
-                    (*it)[1] += changeVal((*it)[1], rate);
-                    (*it)[2] += changeVal((*it)[2], rate);
-                }
-                break;
-            }
-    }
-
-    imshow("strength", expose);
-    //showMultipleImages("src/darken", 2, src, expose);
-
-
-
-	//图像锐化
-	Mat ssrc = expose.clone();
-	Mat blurred; 
-	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
-	//bilateralFilter(ssrc, blurred, 10, 100, 100);
-	GaussianBlur(ssrc, blurred, Size(), sigma, sigma);
-	//blurred = guidedFilter(ssrc, ssrc, r, eps);
-	//medianBlur(ssrc, blurred, an*2+1);
-
-
-	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
-	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
-	ssrc.copyTo(sharpened, lowContrastMask);
-	/* imwrite("data/paper_save.jpg", sharpened); */
-	/* imshow("diff", 255*abs(sharpened - ssrc)); */
-    imshow("diff", sharpened);
-	/* imwrite("data/res_s.jpg", ssrc); */
-	/* imwrite("data/res.jpg", sharpened); */
-    if (!outputPath.empty())
-        imwrite(outputPath, sharpened);
-
-	//图像黑白二值化，效果不好
-	Mat gray;
-	cvtColor(sharpened, gray, CV_BGR2GRAY);
-	/* showMultipleImages("src/smooth/res", 2, original, sharpened); */
-	//adaptiveThreshold(gray, gray, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 2);
-	//cv::threshold(gray, gray, 100, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-	
 }
 
 // callback function for erode/dilate trackbar
