@@ -24,7 +24,7 @@ std::string outputPath;
 float enhance[256];
 
 int winCenter = 200;
-int winHalfWid = 80;
+int winHalfWid = 128;
 
 void calcEnhance();
 int changeVal(int origin, float enhance);
@@ -32,7 +32,7 @@ int changeVal(int origin, float enhance);
 int element_shape = MORPH_RECT;
 
 //the address of variable which receives trackbar position update
-int max_iters = 20;
+int max_iters = 50;
 int open_close_pos = 0;
 int erode_dilate_pos = 0;
 int Start_Strength = 14;
@@ -77,9 +77,9 @@ int main(int argc, char** argv)
 		return -1;
 	}
     int maxL = src.rows > src.cols ? src.rows : src.cols;
+    open_close_pos = max_iters + maxL / 40;
+    erode_dilate_pos = open_close_pos;
 	if (!parser.has("i")) {
-        open_close_pos = max_iters + maxL / 40;
-        erode_dilate_pos = open_close_pos;
         OpenClose(open_close_pos, 0);
         return 0;
     }
@@ -101,7 +101,6 @@ int main(int argc, char** argv)
 	/* namedWindow("Open/Close", 1); */
 	/* namedWindow("Erode/Dilate", 1); */
 
-	open_close_pos = erode_dilate_pos = max_iters;
 	createTrackbar("iterations", "Original", &open_close_pos, max_iters * 2 + 1, OpenClose);
 	/* createTrackbar("iterations", "Erode/Dilate", &erode_dilate_pos, max_iters * 2 + 1, ErodeDilate); */
 
@@ -128,6 +127,8 @@ int main(int argc, char** argv)
 			element_shape = MORPH_CROSS;
 		else if ((char)c == ' ')
 			element_shape = (element_shape + 1) % 3;
+		else if ((char)c == 'q')
+			return 0;
 	}
 
 	return 0;
@@ -158,7 +159,7 @@ static void OpenClose(int, void*)
  	int n = open_close_pos - max_iters;
  	int an = n > 0 ? n : -n;
  	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
-	GaussianBlur(dis, dis, Size(), sigma, sigma);
+//	GaussianBlur(dis, dis, Size(), sigma, sigma);
  	if (n < 0)
  		morphologyEx(dis, dis, MORPH_OPEN, element);
  	else
