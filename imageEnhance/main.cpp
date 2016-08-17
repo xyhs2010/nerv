@@ -198,11 +198,12 @@ static void OpenClose(int, void*)
 	Mat blurred; 
 	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
 	//bilateralFilter(ssrc, blurred, 10, 100, 100);
-	GaussianBlur(ssrc, blurred, Size(), sigma, sigma);
+	GaussianBlur(ssrc, blurred, Size(5, 5), sigma, sigma);
 	//blurred = guidedFilter(ssrc, ssrc, r, eps);
 	//medianBlur(ssrc, blurred, an*2+1);
 
 
+	amount = 5;
 	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
 	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
 	ssrc.copyTo(sharpened, lowContrastMask);
