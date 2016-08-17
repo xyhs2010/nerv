@@ -23,8 +23,8 @@ std::string outputPath;
 
 float enhance[256];
 
-int winCenter = 200;
-int winHalfWid = 128;
+int Left = 0;
+int Right = 255;
 
 void calcEnhance();
 int changeVal(int origin, float enhance);
@@ -105,8 +105,8 @@ int main(int argc, char** argv)
 	/* createTrackbar("iterations", "Erode/Dilate", &erode_dilate_pos, max_iters * 2 + 1, ErodeDilate); */
 
 	/* createTrackbar("strength", "Original", &strength_pos, max_iters*2+1, OpenClose); */
-	createTrackbar("windowmid", "Original", &winCenter, 255, OpenClose);
-	createTrackbar("windowhalfwid", "Original", &winHalfWid, 512, OpenClose);
+	createTrackbar("windowLeft", "Original", &Left, 255, OpenClose);
+	createTrackbar("windowRight", "Original", &Right, 255, OpenClose);
 
 
 	for (;;)
@@ -249,17 +249,13 @@ float windowFunc(float x) {
 
 void calcEnhance() {
     float res;
-    int left = winCenter - winHalfWid > 0 ? winCenter - winHalfWid : 0;
-    int right = winCenter + winHalfWid < 255 ? winCenter + winHalfWid : 255;
     for (int i = 0; i < 256; i++) {
-        if (i <= left) {
+        if (i <= Left) {
             res = -1;
-        } else if ( i >= right) {
+        } else if ( i >= Right) {
             res = 1;
-        } else if (i < winCenter){
-            res = windowFunc((i - winCenter) / ((float)(winCenter - left))); 
         } else {
-            res = windowFunc((i - winCenter) / ((float)(right - winCenter))); 
+            res = windowFunc(2 * (i - Left) / ((float)(Right - Left)) - 1);
         }
         enhance[i] = res;
     }
