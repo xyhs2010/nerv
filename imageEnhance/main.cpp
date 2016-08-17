@@ -244,7 +244,7 @@ float windowFunc(float x) {
         exit(1);
     }
 #endif
-    return sin(x * M_PI / 2);
+    return (x + 1) * (x + 1) / 2.0 - 1.0;
 }
 
 void calcEnhance() {
