@@ -24,7 +24,7 @@ std::string outputPath;
 float enhance[256];
 
 int Left = 0;
-int Right = 255;
+int Right = 250;
 
 void calcEnhance();
 int changeVal(int origin, float enhance);
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
     int maxL = src.rows > src.cols ? src.rows : src.cols;
-    open_close_pos = max_iters + maxL / 40;
+    open_close_pos = max_iters + maxL / 45;
     erode_dilate_pos = open_close_pos;
 	if (!parser.has("i")) {
         OpenClose(open_close_pos, 0);
@@ -159,11 +159,11 @@ static void OpenClose(int, void*)
  	int n = open_close_pos - max_iters;
  	int an = n > 0 ? n : -n;
  	Mat element = getStructuringElement(element_shape, Size(an * 2 + 1, an * 2 + 1), Point(an, an));
-//	GaussianBlur(dis, dis, Size(), sigma, sigma);
  	if (n < 0)
  		morphologyEx(dis, dis, MORPH_OPEN, element);
  	else
  		morphologyEx(dis, dis, MORPH_CLOSE, element);
+	GaussianBlur(dis, dis, Size(), sigma, sigma);
  	imshow("Open/Close", dis);
  	dis = n > 0 ? tmp / dis * 255 : dis / tmp * 255;
  	imshow("before_dis1", dis);
@@ -203,7 +203,8 @@ static void OpenClose(int, void*)
 	//medianBlur(ssrc, blurred, an*2+1);
 
 
-	amount = 5;
+	amount = 2;
+	threshold = 4;
 	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
 	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
 	ssrc.copyTo(sharpened, lowContrastMask);
