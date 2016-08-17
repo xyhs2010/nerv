@@ -170,30 +170,22 @@ static void OpenClose(int, void*)
 
 // 调色
     Mat expose = dis.clone();
-
+    Mat *pgray;
+    vector<Mat> planes;
     const int channels = expose.channels();
-    switch(channels) {
-        case 1: 
-            {
-                MatIterator_<uchar> it, end;
-                for (it=expose.begin<uchar>(), end=expose.end<uchar>(); it != end; ++it)
-                    *it = changeVal(*it, enhance[*it]);
-                break;
-            }
-        case 3:
-            {
-                MatIterator_<Vec3b> it, end;
-                for (it=expose.begin<Vec3b>(), end=expose.end<Vec3b>(); it != end; ++it)
-                {
-                    /* int mean = (*it)[0] + (*it)[1] + (*it)[2]; */
-                    /* mean = mean / 3; */
-                    /* float rate = enhance[mean]; */
-                    (*it)[0] = changeVal((*it)[0], enhance[(*it)[0]]);
-                    (*it)[1] = changeVal((*it)[1], enhance[(*it)[1]]);
-                    (*it)[2] = changeVal((*it)[2], enhance[(*it)[2]]);
-                }
-                break;
-            }
+    if (channels == 1) {
+    	pgray = &expose;
+    } else if (channels == 3) {
+	    cvtColor(expose, expose, CV_BGR2HSV);
+	    split(expose, planes);
+	    pgray = &planes[2];
+    }
+    MatIterator_<uchar> it, end;
+    for (it=pgray->begin<uchar>(), end=pgray->end<uchar>(); it != end; ++it)
+        *it = changeVal(*it, enhance[*it]);
+    if (channels == 3) {
+    	merge(planes, expose);
+    	cvtColor(expose, expose, CV_HSV2BGR);
     }
 
     imshow("strength", expose);
