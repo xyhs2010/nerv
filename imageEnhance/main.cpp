@@ -158,7 +158,7 @@ static void OpenClose(int, void*)
 	//可以为双边滤波，guided image filter，但双边滤波速度较慢
 	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
 	int r = 2; // try r=2, 4, or 8
-	double eps = 0.1 * 0.1; // try eps=0.1^2, 0.2^2, 0.4^2
+	double eps = 0.001; // try eps=0.1^2, 0.2^2, 0.4^2
 
 	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
 	tmp = guidedFilter(original, original, r, eps); // guided image filter
@@ -169,6 +169,9 @@ static void OpenClose(int, void*)
 	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
 	startT = endT;
 	printf("filter: %f\n", cost_time);
+
+    if (showImage)
+	 	imshow("filter", dis);
 
 //  去除不同的光照
  	int n = open_close_pos - max_iters;
@@ -234,7 +237,7 @@ static void OpenClose(int, void*)
 		//medianBlur(ssrc, blurred, an*2+1);
 
 
-		amount = 4;
+		amount = 2;
 		threshold = 4;
 		Mat lowContrastMask = abs(ssrc - blurred) < threshold;
 		sharpened = ssrc*(1 + amount) + blurred*(-amount);
