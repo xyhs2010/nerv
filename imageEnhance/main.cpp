@@ -23,6 +23,9 @@ std::string outputPath;
 
 float enhance[256];
 
+// 图像的长边
+int maxL;
+
 int Left = 0;
 int Right = 250;
 
@@ -37,6 +40,8 @@ int open_close_pos = 0;
 int erode_dilate_pos = 0;
 int Start_Strength = 14;
 int strength_pos = Start_Strength;
+
+bool showImage;
 
 //图像gamma矫正
 void MyGammaCorrection(Mat&, Mat&, float fGamma);
@@ -76,13 +81,15 @@ int main(int argc, char** argv)
 		help(&parser);
 		return -1;
 	}
-    int maxL = src.rows > src.cols ? src.rows : src.cols;
+    maxL = src.rows > src.cols ? src.rows : src.cols;
     open_close_pos = max_iters + maxL / 45;
     erode_dilate_pos = open_close_pos;
 	if (!parser.has("i")) {
+		showImage = false;
         OpenClose(open_close_pos, 0);
         return 0;
     }
+	showImage = true;
     if (maxL > 1080) {
         float rate = 1000.0/maxL;
         Size dsize = Size(src.cols*rate,src.rows*rate);
@@ -164,9 +171,11 @@ static void OpenClose(int, void*)
  	else
  		morphologyEx(dis, dis, MORPH_CLOSE, element);
 	GaussianBlur(dis, dis, Size(), sigma, sigma);
- 	imshow("Open/Close", dis);
+//    if (showImage)
+//	 	imshow("Open/Close", dis);
  	dis = n > 0 ? tmp / dis * 255 : dis / tmp * 255;
- 	imshow("before_dis1", dis);
+//    if (showImage)
+//	 	imshow("before_dis1", dis);
 
 // 调色
     Mat expose = dis.clone();
@@ -188,31 +197,35 @@ static void OpenClose(int, void*)
     	cvtColor(expose, expose, CV_HSV2BGR);
     }
 
-    imshow("strength", expose);
+//    if (showImage)
+//	    imshow("strength", expose);
     //showMultipleImages("src/darken", 2, src, expose);
 
 
 
 	//图像锐化
-	Mat ssrc = expose.clone();
-	Mat blurred; 
-	//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
-	//bilateralFilter(ssrc, blurred, 10, 100, 100);
-	GaussianBlur(ssrc, blurred, Size(5, 5), sigma, sigma);
-	//blurred = guidedFilter(ssrc, ssrc, r, eps);
-	//medianBlur(ssrc, blurred, an*2+1);
+	Mat sharpened;
+    int halfR = maxL / 350;
+    if (halfR > 1) {
+		Mat ssrc = expose.clone();
+		Mat blurred;
+		//多种可能的滤波算法，双边滤波，高斯滤波，guided image filter，中值滤波
+		//bilateralFilter(ssrc, blurred, 10, 100, 100);
+		GaussianBlur(ssrc, blurred, Size(2 * halfR - 1, 2 * halfR - 1), sigma, sigma);
+		//blurred = guidedFilter(ssrc, ssrc, r, eps);
+		//medianBlur(ssrc, blurred, an*2+1);
 
 
-	amount = 2;
-	threshold = 4;
-	Mat lowContrastMask = abs(ssrc - blurred) < threshold;
-	Mat sharpened = ssrc*(1 + amount) + blurred*(-amount);
-	ssrc.copyTo(sharpened, lowContrastMask);
-	/* imwrite("data/paper_save.jpg", sharpened); */
-	/* imshow("diff", 255*abs(sharpened - ssrc)); */
-    imshow("diff", sharpened);
-	/* imwrite("data/res_s.jpg", ssrc); */
-	/* imwrite("data/res.jpg", sharpened); */
+		amount = 4;
+		threshold = 4;
+		Mat lowContrastMask = abs(ssrc - blurred) < threshold;
+		sharpened = ssrc*(1 + amount) + blurred*(-amount);
+		ssrc.copyTo(sharpened, lowContrastMask);
+    } else {
+    	sharpened = expose.clone();
+    }
+    if (showImage)
+	    imshow("diff", sharpened);
     if (!outputPath.empty())
         imwrite(outputPath, sharpened);
 
