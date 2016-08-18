@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include "guidedfilter.h"
 #include <math.h>
+#include <time.h>
 
 
 using namespace std;
@@ -144,10 +145,13 @@ int main(int argc, char** argv)
 //图像增强算法
 static void OpenClose(int, void*)
 {
+	clock_t startT, endT; double cost_time;
 
 	double sigma = 3, threshold = 5, amount = 0.25;
 	Mat original = src.clone();
     Mat tmp = src.clone();
+
+    startT = clock();
 
     calcEnhance();
 	//图像滤波
@@ -158,9 +162,13 @@ static void OpenClose(int, void*)
 
 	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
 	tmp = guidedFilter(original, original, r, eps); // guided image filter
-	
+
 	Mat dis = tmp.clone();
 
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("filter: %f\n", cost_time);
 
 //  去除不同的光照
  	int n = open_close_pos - max_iters;
@@ -176,6 +184,11 @@ static void OpenClose(int, void*)
  	dis = n > 0 ? tmp / dis * 255 : dis / tmp * 255;
 //    if (showImage)
 //	 	imshow("before_dis1", dis);
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("remove background: %f\n", cost_time);
 
 // 调色
     Mat expose = dis.clone();
@@ -196,6 +209,11 @@ static void OpenClose(int, void*)
     	merge(planes, expose);
     	cvtColor(expose, expose, CV_HSV2BGR);
     }
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("color: %f\n", cost_time);
 
 //    if (showImage)
 //	    imshow("strength", expose);
@@ -224,6 +242,12 @@ static void OpenClose(int, void*)
     } else {
     	sharpened = expose.clone();
     }
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("sharpen: %f\n", cost_time);
+
     if (showImage)
 	    imshow("diff", sharpened);
     if (!outputPath.empty())
