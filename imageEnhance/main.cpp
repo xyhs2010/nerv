@@ -42,13 +42,18 @@ int erode_dilate_pos = 0;
 int Start_Strength = 14;
 int strength_pos = Start_Strength;
 
+int sharpen_scale = 2;
+
+int filter_eps = 5;
+int filter_eps_mid = 20;
+
 bool showImage;
 
 //图像gamma矫正
 void MyGammaCorrection(Mat&, Mat&, float fGamma);
 
 //图像直方图均衡化，也是图像增强的一种
-static Mat calchistcontrol(vector<Mat> rgb);
+static Mat calchistcontrol(vector<Mat> rgb, const float* histRange);
 
 //其他的图像滤波算法，L0滤波，见http://www.cse.cuhk.edu.hk/~leojia/projects/L0smoothing/
 cv::Mat L0Smoothing(cv::Mat &im8uc3, double lambda, double kappa);
@@ -108,20 +113,20 @@ int main(int argc, char** argv)
 	//create windows for output images
 	/* namedWindow("Open/Close", 1); */
 	/* namedWindow("Erode/Dilate", 1); */
+	namedWindow("controller", 1);
 
-	createTrackbar("iterations", "Original", &open_close_pos, max_iters * 2 + 1, OpenClose);
-	/* createTrackbar("iterations", "Erode/Dilate", &erode_dilate_pos, max_iters * 2 + 1, ErodeDilate); */
+	createTrackbar("iterations", "controller", &open_close_pos, max_iters * 2 + 1, OpenClose);
+	createTrackbar("windowLeft", "controller", &Left, 255, OpenClose);
+	createTrackbar("windowRight", "controller", &Right, 255, OpenClose);
+	createTrackbar("sharpenScale", "controller", &sharpen_scale, 10, OpenClose);
+	createTrackbar("filterEps", "controller", &filter_eps, 2 * filter_eps_mid, OpenClose);
 
-	/* createTrackbar("strength", "Original", &strength_pos, max_iters*2+1, OpenClose); */
-	createTrackbar("windowLeft", "Original", &Left, 255, OpenClose);
-	createTrackbar("windowRight", "Original", &Right, 255, OpenClose);
 
-
+	OpenClose(open_close_pos, 0);
 	for (;;)
 	{
 		int c;
 
-		OpenClose(open_close_pos, 0);
 		//ErodeDilate(erode_dilate_pos, 0);
 		c = waitKey(0);
 
@@ -137,6 +142,9 @@ int main(int argc, char** argv)
 			element_shape = (element_shape + 1) % 3;
 		else if ((char)c == 'q')
 			return 0;
+		else
+			continue;
+		OpenClose(open_close_pos, 0);
 	}
 
 	return 0;
@@ -147,23 +155,54 @@ static void OpenClose(int, void*)
 {
 	clock_t startT, endT; double cost_time;
 
-	double sigma = 3, threshold = 5, amount = 0.25;
+	double sigma = 3, thres= 5, amount = 0.25;
 	Mat original = src.clone();
     Mat tmp = src.clone();
 
     startT = clock();
+
+    Mat sobleX, sobleY, soble;
+
+    Mat filter_gray;
+    cvtColor(tmp, filter_gray, CV_BGR2GRAY);
+    Sobel(filter_gray,sobleX,CV_32F,1,0,3,1,0,BORDER_DEFAULT); //X方向
+    Sobel(filter_gray,sobleY,CV_32F,0,1,3,1,0,BORDER_DEFAULT); //Y方向
+    magnitude(sobleX, sobleY, soble);
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("soble: %f\n", cost_time);
+
+    Size dsize = Size(soble.cols / 2, soble.rows / 2);
+    Mat filter_scaled;
+    resize(soble, filter_scaled, dsize);
+    Mat filter_mean, filter_std;
+    meanStdDev(filter_scaled, filter_mean, filter_std);
+    soble = (soble - filter_mean) / filter_std;
+    threshold(soble, soble, 1, 0, THRESH_TRUNC);
+    threshold(soble, soble, 1, 0, THRESH_TOZERO);
+
+    double filter_min, filter_max;
+    minMaxIdx(soble, &filter_min, &filter_max);
+
+    cout << "min: " << filter_min << "max: " << filter_max << endl;
+
+    // 展示 soble 的分布
+    float range[] = {filter_min, filter_max};
+    vector<Mat> sobs; sobs.push_back(soble);
+    Mat histImg = calchistcontrol(sobs, range);
+    imshow("hist", histImg);
 
     calcEnhance();
 	//图像滤波
 	//可以为双边滤波，guided image filter，但双边滤波速度较慢
 	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
 	int r = 2; // try r=2, 4, or 8
-	double eps = 0.001; // try eps=0.1^2, 0.2^2, 0.4^2
+	double eps = pow(2, filter_eps - filter_eps_mid); // try eps=0.1^2, 0.2^2, 0.4^2
 
 	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
 	tmp = guidedFilter(original, original, r, eps); // guided image filter
-
-	Mat dis = tmp.clone();
 
 	endT = clock();
 	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
@@ -171,7 +210,9 @@ static void OpenClose(int, void*)
 	printf("filter: %f\n", cost_time);
 
     if (showImage)
-	 	imshow("filter", dis);
+	 	imshow("filter", tmp);
+
+	Mat dis = tmp.clone();
 
 //  去除不同的光照
  	int n = open_close_pos - max_iters;
@@ -237,9 +278,9 @@ static void OpenClose(int, void*)
 		//medianBlur(ssrc, blurred, an*2+1);
 
 
-		amount = 2;
-		threshold = 4;
-		Mat lowContrastMask = abs(ssrc - blurred) < threshold;
+		amount = sharpen_scale;
+		thres= 4;
+		Mat lowContrastMask = abs(ssrc - blurred) < thres;
 		sharpened = ssrc*(1 + amount) + blurred*(-amount);
 		ssrc.copyTo(sharpened, lowContrastMask);
     } else {
@@ -463,42 +504,40 @@ cv::Mat L0Smoothing(cv::Mat &im8uc3, double lambda = 2e-2, double kappa = 2.0) {
 }
 
 //图像直方图均衡化，也是图像增强的一种
-static Mat calchistcontrol(vector<Mat> rgb)
+static Mat calchistcontrol(vector<Mat> rgb_planes, const float* histRange)
 {
-
-	vector<Mat> rgb_planes;
-	rgb_planes = rgb;
 	/// 设定bin数目  
 	int histSize = 255;
 
-	/// 设定取值范围 ( R,G,B) )  
-	float range[] = { 0, 255 };
-	const float* histRange = { range };
+//	/// 设定取值范围 ( R,G,B) )
+//	float range[] = { 0, 255 };
+//	const float* histRange = { range };
 
 	bool uniform = true; bool accumulate = false;
-
-	Mat r_hist, g_hist, b_hist;
-
-	/// 计算直方图:  
-	calcHist(&rgb_planes[0], 1, 0, Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&rgb_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&rgb_planes[2], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
 
 	// 创建直方图画布  
 	int hist_w = 400; int hist_h = 400;
 	int bin_w = cvRound((double)hist_w / histSize);
-
 	Mat histImage(hist_w, hist_h, CV_8UC3, Scalar(0, 0, 0));
 
-	/// 将直方图归一化到范围 [ 0, histImage.rows ]  
-	normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-	normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-	normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	vector<Mat>::iterator it;
+	for (it = rgb_planes.begin(); it != rgb_planes.end(); it++) {
+		/// 计算直方图:
+		Mat tmp_hist;
+		calcHist(&rgb_planes[0], 1, 0, Mat(), tmp_hist, 1, &histSize, &histRange, uniform, accumulate);
 
-	/// 在直方图画布上画出直方图  
-	// 	draw(r_hist, histSize, histImage, bin_w, hist_h, 1);
-	// 	draw(g_hist, histSize, histImage, bin_w, hist_h, 2);
-	// 	draw(b_hist, histSize, histImage, bin_w, hist_h, 3);
+		/// 将直方图归一化到范围 [ 0, histImage.rows ]
+		normalize(tmp_hist, tmp_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+
+		// 绘制
+		for( int i = 1; i < histSize; i++ )
+		{
+			line( histImage, Point( bin_w*(i-1), hist_h - cvRound(tmp_hist.at<float>(i-1)) ) ,
+						   Point( bin_w*(i), hist_h - cvRound(tmp_hist.at<float>(i)) ),
+						   Scalar( 255, 0, 0), 2, 8, 0  );
+		}
+	}
+
 	return histImage;
 }
 
