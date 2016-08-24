@@ -12,6 +12,7 @@
 #include "guidedfilter.h"
 #include <math.h>
 #include <time.h>
+#include "imageEnhance.h"
 
 
 using namespace std;
@@ -28,7 +29,7 @@ float enhance[256];
 int maxL;
 
 int Left = 0;
-int Right = 250;
+int Right = 246;
 
 void calcEnhance();
 int changeVal(int origin, float enhance);
@@ -42,7 +43,7 @@ int erode_dilate_pos = 0;
 int Start_Strength = 14;
 int strength_pos = Start_Strength;
 
-int sharpen_scale = 2;
+double sharpen_scale = 1.5;
 
 int filter_eps = 5;
 int filter_eps_mid = 20;
@@ -91,8 +92,22 @@ int main(int argc, char** argv)
     open_close_pos = max_iters + maxL / 45;
     erode_dilate_pos = open_close_pos;
 	if (!parser.has("i")) {
-		showImage = false;
-        OpenClose(open_close_pos, 0);
+		Mat dst;
+		dst = imageEnhance(src);
+        imwrite(outputPath, dst);
+//		imshow("enhance", dst);
+//		for (;;)
+//		{
+//			int c;
+//			c = waitKey(0);
+//
+//			if ((char)c == 'q')
+//				return 0;
+//			else
+//				continue;
+//		}
+//		showImage = false;
+//        OpenClose(open_close_pos, 0);
         return 0;
     }
 	showImage = true;
@@ -118,7 +133,7 @@ int main(int argc, char** argv)
 	createTrackbar("iterations", "controller", &open_close_pos, max_iters * 2 + 1, OpenClose);
 	createTrackbar("windowLeft", "controller", &Left, 255, OpenClose);
 	createTrackbar("windowRight", "controller", &Right, 255, OpenClose);
-	createTrackbar("sharpenScale", "controller", &sharpen_scale, 10, OpenClose);
+//	createTrackbar("sharpenScale", "controller", &sharpen_scale, 10, OpenClose);
 	createTrackbar("filterEps", "controller", &filter_eps, 2 * filter_eps_mid, OpenClose);
 
 
@@ -158,51 +173,36 @@ static void OpenClose(int, void*)
 	double sigma = 3, thres= 5, amount = 0.25;
 	Mat original = src.clone();
     Mat tmp = src.clone();
+    int MaxL = src.rows > src.cols ? src.rows : src.cols;
 
     startT = clock();
-
-    Mat sobleX, sobleY, soble;
-
-    Mat filter_gray;
-    cvtColor(tmp, filter_gray, CV_BGR2GRAY);
-    Sobel(filter_gray,sobleX,CV_32F,1,0,3,1,0,BORDER_DEFAULT); //X方向
-    Sobel(filter_gray,sobleY,CV_32F,0,1,3,1,0,BORDER_DEFAULT); //Y方向
-    magnitude(sobleX, sobleY, soble);
-
-	endT = clock();
-	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
-	startT = endT;
-	printf("soble: %f\n", cost_time);
-
-    Size dsize = Size(soble.cols / 2, soble.rows / 2);
-    Mat filter_scaled;
-    resize(soble, filter_scaled, dsize);
-    Mat filter_mean, filter_std;
-    meanStdDev(filter_scaled, filter_mean, filter_std);
-    soble = (soble - filter_mean) / filter_std;
-    threshold(soble, soble, 1, 0, THRESH_TRUNC);
-    threshold(soble, soble, 1, 0, THRESH_TOZERO);
-
-    double filter_min, filter_max;
-    minMaxIdx(soble, &filter_min, &filter_max);
-
-    cout << "min: " << filter_min << "max: " << filter_max << endl;
-
-    // 展示 soble 的分布
-    float range[] = {filter_min, filter_max};
-    vector<Mat> sobs; sobs.push_back(soble);
-    Mat histImg = calchistcontrol(sobs, range);
-    imshow("hist", histImg);
 
     calcEnhance();
 	//图像滤波
 	//可以为双边滤波，guided image filter，但双边滤波速度较慢
 	//bilateralFilter(original, src, 10, 20, 20); //双边滤波
-	int r = 2; // try r=2, 4, or 8
-	double eps = pow(2, filter_eps - filter_eps_mid); // try eps=0.1^2, 0.2^2, 0.4^2
+//	int r = 2; // try r=2, 4, or 8
+//	double eps = pow(2, filter_eps - filter_eps_mid); // try eps=0.1^2, 0.2^2, 0.4^2
+//
+//	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
+//	tmp = guidedFilter(original, original, r, eps); // guided image filter
+//
+	int r = maxL / 300;
+	if (r < 2) {
+		r = 2;
+	}
+	cout << r <<endl;
 
-	eps *= 255 * 255;   // Because the intensity range of our images is [0, 255]
-	tmp = guidedFilter(original, original, r, eps); // guided image filter
+	Mat forigin;
+	original.convertTo(forigin, CV_32FC3);
+	Mat var1, var2;
+	boxFilter(forigin.mul(forigin), var1, forigin.depth(), Size(r, r));
+	boxFilter(forigin, var2, forigin.depth(), Size(r, r));
+	Mat var = var1 - var2.mul(var2);
+	Scalar meanS = mean(var) * 1.1;
+	var = var / (meanS + var);
+	Mat filted = var.mul(forigin) + (Scalar(1, 1, 1) - var).mul(var2);
+	filted.convertTo(tmp, CV_8UC3);
 
 	endT = clock();
 	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
