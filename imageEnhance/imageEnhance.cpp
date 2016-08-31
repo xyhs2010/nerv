@@ -6,6 +6,7 @@
  */
 
 #include "imageEnhance.h"
+#include <time.h>
 
 using namespace std;
 using namespace cv;
@@ -20,6 +21,9 @@ cv::Mat imageEnhance(cv::Mat input) {
 	int channels = input.channels();
     int maxL = input.rows > input.cols ? input.rows : input.cols;
 	int sigma = 3;
+
+	clock_t startT, endT; double cost_time;
+    startT = clock();
 
 //    图像滤波, filter
     int r = maxL / 300;
@@ -51,13 +55,28 @@ cv::Mat imageEnhance(cv::Mat input) {
 		fil_Result.convertTo(fil_Result, CV_8UC1);
 	}
 
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("filter: %f\n", cost_time);
+
 //	去除背景 remove background
-	int rb_r = maxL / 45;
+	double rb_rate = 300.0 / maxL;
+	Mat rb_Small;
+	resize(fil_Result, rb_Small, Size(fil_Result.cols * rb_rate, fil_Result.rows * rb_rate));
+
+	int rb_r = 7;
  	Mat element = getStructuringElement(MORPH_RECT, Size(rb_r * 2 + 1, rb_r * 2 + 1), Point(rb_r, rb_r));
  	Mat rb_Blur;
- 	morphologyEx(fil_Result, rb_Blur, MORPH_CLOSE, element);
+ 	morphologyEx(rb_Small, rb_Blur, MORPH_CLOSE, element);
  	GaussianBlur(rb_Blur, rb_Blur, Size(), sigma, sigma);
+ 	resize(rb_Blur, rb_Blur, Size(fil_Result.cols, fil_Result.rows));
  	Mat rb_Result = fil_Result / rb_Blur * 255;
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("remove background: %f\n", cost_time);
 
 // 调色 color
  	calcenhance(0, 246);
@@ -65,12 +84,12 @@ cv::Mat imageEnhance(cv::Mat input) {
     Mat *cl_Gray;
     Mat cl_Hsv, cl_Result;
     vector<Mat> cl_planes;
-    if (channels == 1) {
-    	cl_Gray = &rb_Result;
-    } else if (channels == 3) {
+    if (channels == 3) {
 	    cvtColor(rb_Result, cl_Hsv, CV_BGR2HSV);
 	    split(cl_Hsv, cl_planes);
 	    cl_Gray = &cl_planes[2];
+    } else {
+    	cl_Gray = &rb_Result;
     }
     MatIterator_<uchar> it, end;
     for (it=cl_Gray->begin<uchar>(), end=cl_Gray->end<uchar>(); it != end; ++it)
@@ -81,6 +100,11 @@ cv::Mat imageEnhance(cv::Mat input) {
     } else {
     	cl_Result = *cl_Gray;
     }
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("color: %f\n", cost_time);
 
 //    图像锐化 sharpen
     Mat shp_Result;
@@ -96,6 +120,11 @@ cv::Mat imageEnhance(cv::Mat input) {
 	} else {
 		shp_Result = cl_Result.clone();
 	}
+
+	endT = clock();
+	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+	startT = endT;
+	printf("sharpen: %f\n", cost_time);
 
     return shp_Result;
 }

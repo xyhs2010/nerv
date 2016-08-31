@@ -110,6 +110,20 @@ int main(int argc, char** argv)
 //        OpenClose(open_close_pos, 0);
         return 0;
     }
+	Mat dst;
+	dst = imageEnhance(src);
+	imshow("enhance", dst);
+	for (;;)
+	{
+		int c;
+		c = waitKey(0);
+
+		if ((char)c == 'q')
+			return 0;
+		else
+			continue;
+	}
+	return 0;
 	showImage = true;
     if (maxL > 1080) {
         float rate = 1000.0/maxL;
