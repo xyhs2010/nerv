@@ -40,43 +40,78 @@ cv::Mat imageEnhance(cv::Mat input) {
 	boxFilter(fil_F.mul(fil_F), fil_Squ, fil_F.depth(), Size(r, r));
 	boxFilter(fil_F, fil_Blur, fil_F.depth(), Size(r, r));
 	Mat fil_Var = fil_Squ - fil_Blur.mul(fil_Blur);
-	Scalar fil_mean = mean(fil_Var) * 1.1;
-	fil_Var = fil_Var / (fil_Var + fil_mean);
+	Scalar fil_valmean = mean(fil_Var) * 1.1;
+	Mat fil_Rate = fil_Var / (fil_Var + fil_valmean);
 	Scalar fil_one;
 	if (channels == 3) {
 		fil_one = Scalar(1, 1, 1);
 	} else {
 		fil_one = Scalar(1);
 	}
-	Mat fil_Result = fil_Var.mul(fil_F) + (fil_one - fil_Var).mul(fil_Blur);
+	Mat fil_Result = fil_Rate.mul(fil_F) + (fil_one - fil_Rate).mul(fil_Blur);
 	if (channels == 3) {
 		fil_Result.convertTo(fil_Result, CV_8UC3);
 	} else {
 		fil_Result.convertTo(fil_Result, CV_8UC1);
 	}
 
+//	去除背景 remove background
 	endT = clock();
 	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
 	startT = endT;
 	printf("filter: %f\n", cost_time);
 
-//	去除背景 remove background
-	double rb_rate = 300.0 / maxL;
-	Mat rb_Small;
-	resize(fil_Result, rb_Small, Size(fil_Result.cols * rb_rate, fil_Result.rows * rb_rate));
+	Scalar fil_mean = mean(input);
+	Mat fil_VarGray;
+	cvtColor(fil_Var, fil_VarGray, CV_BGR2GRAY);
+	Scalar fil_mean1 = mean(input, fil_VarGray > fil_valmean[0]);
+	bool rb_if = false;
+	if (channels == 3) {
+		rb_if = (fil_mean[0] > fil_mean1[0]) || (fil_mean[1] > fil_mean1[1]) || (fil_mean[2] > fil_mean1[2]);
+	} else {
+		rb_if = (fil_mean[0] > fil_mean1[0]);
+	}
+	Mat rb_Result;
+	if (rb_if) {
+		double rb_rate = 300.0 / maxL;
+		Mat rb_Small;
+		resize(fil_Result, rb_Small, Size(fil_Result.cols * rb_rate, fil_Result.rows * rb_rate));
 
-	int rb_r = 7;
- 	Mat element = getStructuringElement(MORPH_RECT, Size(rb_r * 2 + 1, rb_r * 2 + 1), Point(rb_r, rb_r));
- 	Mat rb_Blur;
- 	morphologyEx(rb_Small, rb_Blur, MORPH_CLOSE, element);
- 	GaussianBlur(rb_Blur, rb_Blur, Size(), sigma, sigma);
- 	resize(rb_Blur, rb_Blur, Size(fil_Result.cols, fil_Result.rows));
- 	Mat rb_Result = fil_Result / rb_Blur * 255;
+		int rb_r = 7;
+	 	Mat element = getStructuringElement(MORPH_RECT, Size(rb_r * 2 + 1, rb_r * 2 + 1), Point(rb_r, rb_r));
+	 	Mat rb_Blur;
+	 	morphologyEx(rb_Small, rb_Blur, MORPH_CLOSE, element);
 
-	endT = clock();
-	cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
-	startT = endT;
-	printf("remove background: %f\n", cost_time);
+	 	int rb_r1 = 30;
+	 	element = getStructuringElement(MORPH_RECT, Size(rb_r1 * 2 + 1, rb_r1 * 2 + 1), Point(rb_r1, rb_r1));
+	 	Mat rb_Blur1;
+	 	morphologyEx(rb_Small, rb_Blur1, MORPH_CLOSE, element);
+	 	Mat rb_Mask = (rb_Blur1 - rb_Blur) > 60;
+		vector<Mat> bgr_planes;
+		split( rb_Mask, bgr_planes);
+		rb_Mask = bgr_planes[0] + bgr_planes[1] + bgr_planes[2];
+	 	rb_Blur1.copyTo(rb_Blur, rb_Mask);
+
+	// 	Mat rb_Mean, rb_Std;
+	// 	meanStdDev(rb_Blur, rb_Mean, rb_Std);
+	// 	double rb_min = rb_Mean.at<double>(0, 0) - rb_Mean.at<double>(0, 0);
+	// 	if (rb_min > 0) {
+	//	 	rb_Blur = rb_Blur - rb_min;
+	//	 	rb_Blur = rb_Blur + rb_min;
+	//	}
+
+	 	GaussianBlur(rb_Blur, rb_Blur, Size(), sigma, sigma);
+	 	resize(rb_Blur, rb_Blur, Size(fil_Result.cols, fil_Result.rows));
+	 	rb_Result = fil_Result / rb_Blur * 255;
+
+		endT = clock();
+		cost_time=((double)(endT - startT))/CLOCKS_PER_SEC;
+		startT = endT;
+		printf("remove background: %f\n", cost_time);
+	} else {
+		printf("can not handle dark image\n");
+		return fil_Result;
+	}
 
 // 调色 color
  	calcenhance(0, 246);
@@ -108,11 +143,11 @@ cv::Mat imageEnhance(cv::Mat input) {
 
 //    图像锐化 sharpen
     Mat shp_Result;
-    int shp_r = maxL / 350;
+    int shp_r = pow(maxL, 0.5) / 13;
     if (shp_r > 1) {
 		Mat shp_Blur;
 		GaussianBlur(cl_Result, shp_Blur, Size(2 * shp_r - 1, 2 * shp_r - 1), sigma, sigma);
-		double shp_amount = 1.5;
+		double shp_amount = 1;
 		int shp_thres = 4;
 		Mat shp_Mask = abs(cl_Result - shp_Blur) < shp_thres;
 		shp_Result = cl_Result * (1 + shp_amount) + shp_Blur * (-shp_amount);

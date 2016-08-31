@@ -110,6 +110,15 @@ int main(int argc, char** argv)
 //        OpenClose(open_close_pos, 0);
         return 0;
     }
+    if (maxL > 1080) {
+        float rate = 1000.0/maxL;
+        Size dsize = Size(src.cols*rate,src.rows*rate);
+        Mat scaled = Mat(dsize, CV_8UC3);
+        resize(src, scaled,dsize);
+        src = scaled;
+    }
+	imshow("Original", src);
+
 	Mat dst;
 	dst = imageEnhance(src);
 	imshow("enhance", dst);
@@ -125,14 +134,6 @@ int main(int argc, char** argv)
 	}
 	return 0;
 	showImage = true;
-    if (maxL > 1080) {
-        float rate = 1000.0/maxL;
-        Size dsize = Size(src.cols*rate,src.rows*rate);
-        Mat scaled = Mat(dsize, CV_8UC3);
-        resize(src, scaled,dsize);
-        src = scaled;
-    }
-	imshow("Original", src);
 
 	/* Mat gamma; */
 	/* float g = 1/2.2; */
