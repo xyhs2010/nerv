@@ -1,5 +1,11 @@
+.*
+
 # imageEnhance
 imageEnhance/data/*
 imageEnhance/bin/*
 imageEnhance/out/*
-.*
+
+# flatDoc
+flatDoc/data/*
+flatDoc/bin/*
+flatDoc/out/*
