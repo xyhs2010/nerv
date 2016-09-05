@@ -45,5 +45,3 @@ int createBlocks(Acmat *mat, Acblock **pblocks) {
 	}
 	return numc * numr;
 }
-
-
