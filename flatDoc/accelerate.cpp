@@ -29,3 +29,6 @@ double valueAt(Acmat *mat, int ic, int ir) {
 	}
 }
 
+void destroyMat(Acmat *mat) {
+	free(mat->data);
+}

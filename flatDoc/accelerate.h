@@ -28,6 +28,7 @@ typedef struct {
 } Acmat;
 
 void tranversMat(Acmat *mat, void (*func)(Acmat *, int, int));
+void destroyMat(Acmat *mat);
 
 double valueAt(Acmat *mat, int ic, int ir);
 

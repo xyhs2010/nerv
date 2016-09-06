@@ -25,7 +25,15 @@ typedef struct {
 	double belief;
 } Acblock;
 
-int createBlocks(Acmat *mat, Acblock **pblocks);
+typedef struct {
+	Acblock *blocks;
+	int cols;
+	int rows;
+	bool col_major;
+} Acblockarray;
+
+Acblockarray createBlocks(Acmat *mat, Acblock **pblocks);
+void destroyBlockArray(Acblockarray *array);
 
 
 

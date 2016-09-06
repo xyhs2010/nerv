@@ -7,7 +7,7 @@
 
 #include "calcproj.h"
 
-int createBlocks(Acmat *mat, Acblock **pblocks) {
+Acblockarray createBlocks(Acmat *mat, Acblock **pblocks) {
 	int maxL = mat->cols > mat->rows ? mat->cols : mat->rows;
 	int radius = maxL / 28;
 	if (radius < 4)
@@ -43,5 +43,14 @@ int createBlocks(Acmat *mat, Acblock **pblocks) {
 			index++;
 		}
 	}
-	return numc * numr;
+	Acblockarray blockarray;
+	blockarray.blocks = blocks;
+	blockarray.col_major = true;
+	blockarray.cols = numc;
+	blockarray.rows = numr;
+	return blockarray;
+}
+
+void destroyBlockArray(Acblockarray *array) {
+	free(array->blocks);
 }
