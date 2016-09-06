@@ -11,6 +11,8 @@
 
 #include "accelerate.h"
 
+#define PROJ_GRIDS_NUM (9)
+
 typedef struct {
 	Acmat *mat;
 	int startc;
@@ -19,7 +21,7 @@ typedef struct {
 	int endr;
 	int centerc;
 	int centerr;
-	int radius;
+	double radius;
 	double fstang;
 	double secang;
 	double belief;
@@ -32,9 +34,9 @@ typedef struct {
 	bool col_major;
 } Acblockarray;
 
-Acblockarray createBlocks(Acmat *mat, Acblock **pblocks);
+Acblockarray createBlocks(Acmat *mat);
 void destroyBlockArray(Acblockarray *array);
 
-
+double projStdAtAngle(double angle, Acblock *block);
 
 #endif /* CALCPROJ_H_ */

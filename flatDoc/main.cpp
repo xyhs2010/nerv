@@ -6,6 +6,7 @@
 #include <iostream>
 #include "accelerate.h"
 #include "calcproj.h"
+#include <math.h>
 
 using namespace std;
 using namespace cv;
@@ -40,10 +41,10 @@ int main(int argc, char** argv)
 	if (convertMat(gray, &srcmat) < 0) {
 		return -1;
 	}
-	Acblock *blocks;
-	createBlocks(&srcmat, &blocks);
-	free(blocks);
-	free(srcmat.data);
+	Acblockarray blockarray = createBlocks(&srcmat);
+
+	destroyBlockArray(&blockarray);
+	destroyMat(&srcmat);
 
 	imshow("Original", src);
 

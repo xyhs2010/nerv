@@ -32,5 +32,8 @@ void destroyMat(Acmat *mat);
 
 double valueAt(Acmat *mat, int ic, int ir);
 
+double acmean(double *values, double *weights, int num);
+double acvariance(double *values, double *weights, int num);
+
 
 #endif /* ACCELERATE_H_ */
