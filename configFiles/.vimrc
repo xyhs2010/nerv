@@ -26,10 +26,10 @@ Plugin 'plasticboy/vim-markdown'
 " *.c 和 *.h 间切换
 Plugin 'derekwyatt/vim-fswitch'
 
-" ctags 自动生成
-Plugin 'vim-scripts/DfrankUtil'
-Plugin 'vim-scripts/vimprj'
-Plugin 'vim-scripts/indexer.tar.gz'
+" " ctags 自动生成
+" Plugin 'vim-scripts/DfrankUtil'
+" Plugin 'vim-scripts/vimprj'
+" Plugin 'vim-scripts/indexer.tar.gz'
 
 " 搜索
 Plugin 'dyng/ctrlsf.vim'
@@ -37,8 +37,8 @@ Plugin 'dyng/ctrlsf.vim'
 " 多光标
 Plugin 'terryma/vim-multiple-cursors'
 
-" 语法检查
-Plugin 'scrooloose/syntastic'
+" " 语法检查
+" Plugin 'scrooloose/syntastic'
 
 " 快速打开
 Plugin 'ctrlpvim/ctrlp.vim'
@@ -102,9 +102,9 @@ source $VIMRUNTIME/ftplugin/man.vim
 " 定义: Man命令查看各类man信息的快捷键
 nnoremap <Leader>man :Man 3 <cword><CR>
 
-" 自动生成 ctags. 配置文件在 ~/.indexer_files
-" 头文件，在~/.vim/systags
-set tags+=~/.vim/systags
+" " 自动生成 ctags. 配置文件在 ~/.indexer_files
+" " 头文件，在~/.vim/systags
+" set tags+=~/.vim/systags
 
 " 设置状态栏主题风格
 let g:Powerline_colorscheme='solarized256'
@@ -114,20 +114,20 @@ if has("win32")
     set nobackup
 endif
 
-" 每次自动调用 :SyntasticSetLocList, 将错误覆盖 **quickfix**
-let g:syntastic_always_populate_loc_list = 1
-" 自动拉起/关闭错误窗口, 不需要手动调用 :Errors
-let g:syntastic_auto_loc_list = 1
-" 打开文件的时候做检查
-let g:syntastic_check_on_open = 1
-" 每次保存的时候做检查
-let g:syntastic_check_on_wq = 1
-" 错误窗口高度
-let g:syntastic_loc_list_height=5
+" " 每次自动调用 :SyntasticSetLocList, 将错误覆盖 **quickfix**
+" let g:syntastic_always_populate_loc_list = 1
+" " 自动拉起/关闭错误窗口, 不需要手动调用 :Errors
+" let g:syntastic_auto_loc_list = 1
+" " 打开文件的时候做检查
+" let g:syntastic_check_on_open = 1
+" " 每次保存的时候做检查
+" let g:syntastic_check_on_wq = 1
+" " 错误窗口高度
+" let g:syntastic_loc_list_height=5
 
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
+" set statusline+=%#warningmsg#
+" set statusline+=%{SyntasticStatuslineFlag()}
+" set statusline+=%*
 
 " 打开文件
 nnoremap <Leader>op :CtrlP<CR>
