@@ -39,4 +39,6 @@ void destroyBlockArray(Acblockarray *array);
 
 double projStdAtAngle(double angle, Acblock *block);
 
+void projStdsAtAngles(const double *angles, double *stds, int num,  Acblock *block);
+
 #endif /* CALCPROJ_H_ */

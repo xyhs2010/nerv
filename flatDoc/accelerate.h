@@ -35,5 +35,8 @@ double valueAt(Acmat *mat, int ic, int ir);
 double acmean(double *values, double *weights, int num);
 double acvariance(double *values, double *weights, int num);
 
+double acmaxIndex(double *values, int num) ;
+double acminIndex(double *values, int num) ;
+
 
 #endif /* ACCELERATE_H_ */

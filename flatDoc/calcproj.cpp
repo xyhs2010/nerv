@@ -68,7 +68,7 @@ double projStdAtAngle(double angle, Acblock *block) {
 			x = ic - block->centerc;
 			y = ir - block->centerr;
 			if (x * x + y * y <= block->radius * block->radius) {
-				proj = x * cos(angle) + y * sin(angle);
+				proj = y * cos(angle) - x * sin(angle);
 				int gridindex = (proj + block->radius) / grid;
 				if (gridindex < 0 || gridindex >= PROJ_GRIDS_NUM) {
 					printf("grid error");
@@ -84,4 +84,51 @@ double projStdAtAngle(double angle, Acblock *block) {
 		}
 	}
 	return sqrt(acvariance(accum, entire, PROJ_GRIDS_NUM));
+}
+
+void projStdsAtAngles(const double *angles, double *stds, int num,  Acblock *block) {
+	double ** accums = (double **)malloc(num * sizeof(double *));
+	for (int i = 0; i < num; i++) {
+		accums[i] = (double *)malloc(PROJ_GRIDS_NUM * sizeof(double));
+		for (int j = 0; j < PROJ_GRIDS_NUM; j++)
+			accums[i][j] = 0;
+	}
+	double ** entires = (double **)malloc(num * sizeof(double *));
+	for (int i = 0; i < num; i++) {
+		entires[i] = (double *)malloc(PROJ_GRIDS_NUM * sizeof(double));
+		for (int j = 0; j < PROJ_GRIDS_NUM; j++)
+			entires[i][j] = 0;
+	}
+	double grid = (2 * block->radius + 1) / (PROJ_GRIDS_NUM);
+	double x, y, proj;
+	for (int ic = block->startc; ic < block->endc; ic++) {
+		for (int ir = block->startr; ir < block->endr; ir++) {
+			x = ic - block->centerc;
+			y = ir - block->centerr;
+			if (x * x + y * y <= block->radius * block->radius) {
+				for (int i = 0; i < num; i++) {
+					double angle = angles[i];
+					proj = y * cos(angle) - x * sin(angle);
+					int gridindex = (proj + block->radius) / grid;
+					if (gridindex < 0 || gridindex >= PROJ_GRIDS_NUM) {
+						printf("grid error");
+					}
+					entires[i][gridindex] += 1;
+					accums[i][gridindex] += valueAt(block->mat, ic, ir);
+				}
+			}
+		}
+	}
+	for (int i = 0; i < num; i++) {
+		for (int j = 0; j < PROJ_GRIDS_NUM; j++) {
+			if (entires[i][j] > 0) {
+				accums[i][j] /= entires[i][j];
+			}
+		}
+		stds[i] = sqrt(acvariance(accums[i], entires[i], PROJ_GRIDS_NUM));
+		free(accums[i]);
+		free(entires[i]);
+	}
+	free(accums);
+	free(entires);
 }

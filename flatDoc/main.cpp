@@ -8,6 +8,8 @@
 #include "calcproj.h"
 #include <math.h>
 
+#define ANGLE_NUM (16)
+
 using namespace std;
 using namespace cv;
 
@@ -42,6 +44,25 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	Acblockarray blockarray = createBlocks(&srcmat);
+
+	double angles[ANGLE_NUM];
+	double stds[ANGLE_NUM];
+	for (int i = 0; i < ANGLE_NUM; i++) {
+		angles[i] = (M_PI * i) / ANGLE_NUM;
+	}
+
+	int index;
+	double angle;
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock block = blockarray.blocks[i];
+		projStdsAtAngles(angles, stds, ANGLE_NUM, &block);
+		index = acmaxIndex(stds, ANGLE_NUM);
+		angle = angles[index];
+		double x, y;
+		x = 10 * cos(angle); y = 10 * sin(angle);
+		Point p1(block.centerc - x, block.centerr - y), p2(block.centerc + x, block.centerr + y);
+		line(src, p1, p2, Scalar(0, 0, 255), 3);
+	}
 
 	destroyBlockArray(&blockarray);
 	destroyMat(&srcmat);

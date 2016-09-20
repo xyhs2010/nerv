@@ -70,3 +70,37 @@ double acvariance(double *values, double *weights, int num) {
 	return sqmean - (mean * mean);
 }
 
+double acmaxIndex(double *values, int num) {
+	if (num <= 0) {
+		return 0;
+	}
+	assert(values != NULL);
+
+	double max = values[0], index = 0;
+
+	for (int i = 0; i < num; i++) {
+		if (values[i] > max) {
+			index = i;
+			max = values[i];
+		}
+	}
+	return index;
+}
+
+double acminIndex(double *values, int num) {
+	if (num <= 0) {
+		return 0;
+	}
+	assert(values != NULL);
+
+	double min = values[0], index = 0;
+
+	for (int i = 0; i < num; i++) {
+		if (values[i] < min) {
+			index = i;
+			min = values[i];
+		}
+	}
+	return index;
+}
+
