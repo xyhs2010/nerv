@@ -32,23 +32,60 @@ cv::Mat imageEnhance(cv::Mat input) {
 	}
     Mat fil_F;
     if (channels == 3) {
-	    input.convertTo(fil_F, CV_32FC3);
+	    input.convertTo(fil_F, CV_16UC3);
 	} else {
-	    input.convertTo(fil_F, CV_32FC1);
+	    input.convertTo(fil_F, CV_16UC1);
 	}
 	Mat fil_Squ, fil_Blur;
 	boxFilter(fil_F.mul(fil_F), fil_Squ, fil_F.depth(), Size(r, r));
 	boxFilter(fil_F, fil_Blur, fil_F.depth(), Size(r, r));
-	Mat fil_Var = fil_Squ - fil_Blur.mul(fil_Blur);
+	fil_F.release();
+	Mat fil_Var = fil_Squ;
+	fil_Squ.release();
+	fil_Var = fil_Var - fil_Blur.mul(fil_Blur);
 	Scalar fil_valmean = mean(fil_Var) * 1.1;
+	if (channels == 3) {
+	    fil_Var.convertTo(fil_Var, CV_32FC3);
+	} else {
+	    fil_Var.convertTo(fil_Var, CV_32FC1);
+	}
 	Mat fil_Rate = fil_Var / (fil_Var + fil_valmean);
+
 	Scalar fil_one;
 	if (channels == 3) {
 		fil_one = Scalar(1, 1, 1);
 	} else {
 		fil_one = Scalar(1);
 	}
-	Mat fil_Result = fil_Rate.mul(fil_F) + (fil_one - fil_Rate).mul(fil_Blur);
+
+	if (channels == 3) {
+		fil_Blur.convertTo(fil_Blur, CV_32FC3);
+	} else {
+		fil_Blur.convertTo(fil_Blur, CV_32FC1);
+	}
+	Mat fil_Res1 = (fil_one - fil_Rate).mul(fil_Blur);
+	fil_Blur.release();
+	if (channels == 3) {
+		fil_Res1.convertTo(fil_Res1, CV_8UC3);
+	} else {
+		fil_Res1.convertTo(fil_Res1, CV_8UC1);
+	}
+
+
+	if (channels == 3) {
+	    input.convertTo(fil_F, CV_32FC3);
+	} else {
+	    input.convertTo(fil_F, CV_32FC1);
+	}
+	Mat fil_Res2 = fil_Rate.mul(fil_F);
+	fil_F.release();
+	if (channels == 3) {
+		fil_Res2.convertTo(fil_Res2, CV_8UC3);
+	} else {
+		fil_Res2.convertTo(fil_Res2, CV_8UC1);
+	}
+
+	Mat fil_Result = fil_Res1 + fil_Res2;
 	if (channels == 3) {
 		fil_Result.convertTo(fil_Result, CV_8UC3);
 	} else {
