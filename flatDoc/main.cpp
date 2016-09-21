@@ -37,8 +37,14 @@ int main(int argc, char** argv)
 	if (!parser.has("i")) {
     }
 
+	double maxL = src.cols > src.rows ? src.cols : src.rows;
+	if (maxL > 1080) {
+		double rate = 1080 / maxL;
+		resize(src, src, Size(src.cols * rate, src.rows * rate));
+	}
 	Mat gray;
 	cvtColor(src, gray, CV_BGR2GRAY);
+	src = src * 0.5 + 128;
 	Acmat srcmat;
 	if (convertMat(gray, &srcmat) < 0) {
 		return -1;
@@ -51,17 +57,23 @@ int main(int argc, char** argv)
 		angles[i] = (M_PI * i) / ANGLE_NUM;
 	}
 
-	int index;
+	int mini, maxi;
 	double angle;
+	char text[30];
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock block = blockarray.blocks[i];
 		projStdsAtAngles(angles, stds, ANGLE_NUM, &block);
-		index = acmaxIndex(stds, ANGLE_NUM);
-		angle = angles[index];
+		maxi = acmaxIndex(stds, ANGLE_NUM);
+		mini = acminIndex(stds, ANGLE_NUM);
+		angle = angles[maxi];
+
 		double x, y;
 		x = 10 * cos(angle); y = 10 * sin(angle);
 		Point p1(block.centerc - x, block.centerr - y), p2(block.centerc + x, block.centerr + y);
-		line(src, p1, p2, Scalar(0, 0, 255), 3);
+		line(src, p1, p2, Scalar(0, 0, 255), 1);
+
+		sprintf(text, "(%.0f, %.0f)", stds[maxi], stds[mini]);
+		putText(src, text, Point(block.centerc - 20, block.centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
 	}
 
 	destroyBlockArray(&blockarray);
