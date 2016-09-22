@@ -22,9 +22,12 @@ typedef struct {
 	int centerc;
 	int centerr;
 	double radius;
-	double fstang;
-	double secang;
-	double belief;
+
+	double minWeight;
+	double maxWeight;
+	double minAngle;
+	double maxAngle;
+	bool useful;
 } Acblock;
 
 typedef struct {

@@ -46,7 +46,6 @@ Acblockarray createBlocks(Acmat *mat) {
 			} else {
 				blocks[index].endr = blocks[index].startr + blockwid;
 			}
-			blocks[index].belief = -1;
 			index++;
 		}
 	}

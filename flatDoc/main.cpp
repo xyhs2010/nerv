@@ -61,18 +61,33 @@ int main(int argc, char** argv)
 	double angle;
 	char text[30];
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock block = blockarray.blocks[i];
-		projStdsAtAngles(angles, stds, ANGLE_NUM, &block);
+		Acblock *pblock = blockarray.blocks + i;
+		projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
 		maxi = acmaxIndex(stds, ANGLE_NUM);
 		mini = acminIndex(stds, ANGLE_NUM);
-		angle = angles[maxi];
+		pblock->maxAngle = angles[maxi];
+		pblock->maxWeight = stds[maxi];
+		pblock->minAngle = angles[mini];
+		pblock->minWeight = stds[mini];
+		pblock->useful = true;
+
+		if (stds[maxi] - stds[mini] < 10) {
+			pblock->useful = false;
+		}
+	}
+
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock block = blockarray.blocks[i];
+		if (!block.useful) {
+			continue;
+		}
 
 		double x, y;
-		x = 10 * cos(angle); y = 10 * sin(angle);
+		x = 10 * cos(block.maxAngle); y = 10 * sin(block.maxAngle);
 		Point p1(block.centerc - x, block.centerr - y), p2(block.centerc + x, block.centerr + y);
 		line(src, p1, p2, Scalar(0, 0, 255), 1);
 
-		sprintf(text, "(%.0f, %.0f)", stds[maxi], stds[mini]);
+		sprintf(text, "(%.0f, %.0f)", block.maxWeight, block.minWeight);
 		putText(src, text, Point(block.centerc - 20, block.centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
 	}
 
