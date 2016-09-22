@@ -44,4 +44,6 @@ double projStdAtAngle(double angle, Acblock *block);
 
 void projStdsAtAngles(const double *angles, double *stds, int num,  Acblock *block);
 
+void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs);
+
 #endif /* CALCPROJ_H_ */

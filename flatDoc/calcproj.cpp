@@ -131,3 +131,45 @@ void projStdsAtAngles(const double *angles, double *stds, int num,  Acblock *blo
 	free(accums);
 	free(entires);
 }
+
+void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs) {
+	int ic, ir;
+	for (int i = 0; i < 4; i++)
+		neibourIndexs[i] = -1;
+
+	if (array->col_major) {
+		ic = index / array->rows;
+		ir = index % array->rows;
+	} else {
+		ic = index % array->cols;
+		ir = index / array->cols;
+	}
+
+	if (array->col_major) {
+		if (ic > 0)
+			// left
+			neibourIndexs[3] = index - array->rows;
+		if (ic < array->cols - 1)
+			// right
+			neibourIndexs[1] = index + array->rows;
+		if (ir > 0)
+			// up
+			neibourIndexs[0] = index - 1;
+		if (ir < array->rows - 1)
+			// down
+			neibourIndexs[2] = index + 1;
+	} else {
+		if (ic > 0)
+			// left
+			neibourIndexs[3] = index - 1;
+		if (ic < array->cols - 1)
+			// right
+			neibourIndexs[1] = index + 1;
+		if (ir > 0)
+			// up
+			neibourIndexs[0] = index - array->cols;
+		if (ir < array->rows - 1)
+			// down
+			neibourIndexs[2] = index + array->cols;
+	}
+}

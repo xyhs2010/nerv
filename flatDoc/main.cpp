@@ -77,6 +77,26 @@ int main(int argc, char** argv)
 	}
 
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock *pblock = blockarray.blocks + i;
+		int neibourIndexs[4];
+		int wrongSum = 0;
+		double neibAngle;
+		obtainNeibourAcblocks(&blockarray, i, neibourIndexs);
+		for (int j = 0; j < 4; j++) {
+			if (neibourIndexs[j] < 0 ||
+					!blockarray.blocks[neibourIndexs[j]].useful) {
+				continue;
+			}
+			neibAngle = blockarray.blocks[neibourIndexs[j]].maxAngle;
+			if (abs(neibAngle - pblock->maxAngle) > M_PI/4)
+				wrongSum++;
+		}
+		if (wrongSum > 1) {
+			pblock->useful = false;
+		}
+	}
+
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock block = blockarray.blocks[i];
 		if (!block.useful) {
 			continue;
