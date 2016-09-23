@@ -72,6 +72,8 @@ cv::Mat imageEnhance(cv::Mat input) {
 	multiply(input, fil_Rate, fil_Res2, 1, CV_16U);
 
 	Mat fil_Result = fil_Res1 + fil_Res2;
+	fil_Res1.release();
+	fil_Res2.release();
 	fil_Result = fil_Result / 255;
 	if (channels == 3) {
 		fil_Result.convertTo(fil_Result, CV_8UC3);
