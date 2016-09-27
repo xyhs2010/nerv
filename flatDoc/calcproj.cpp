@@ -203,19 +203,9 @@ void blocksFilter(Acblockarray *parray) {
 //		}
 	}
 
-//	Mat opened;
-//	int open_r = 8;
-//	Mat element = getStructuringElement(MORPH_RECT, Size(open_r * 2 + 1, open_r * 2 + 1), Point(open_r, open_r));
-//	morphologyEx(gray, opened, MORPH_OPEN, element);
-//	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-//		Acblock *pblock = blockarray.blocks + i;
-//		if (opened.at<uchar>(pblock->centerr, pblock->centerc) > 128) {
-//			pblock->useful = false;
-//		}
-//	}
 	Acmat *erased = (Acmat *)malloc(sizeof(Acmat));
 	Acmat *opened = (Acmat *)malloc(sizeof(Acmat));
-	traverseMatLocal(blockarray.blocks[0].mat, erased, 8, erasecore);
+	traverseMatLocal(blockarray.blocks[0].mat, erased, 8, erodecore);
 	traverseMatLocal(erased, opened, 8, dilatecore);
 	destroyMat(erased);
 	free(erased);
@@ -265,7 +255,7 @@ void blocksFilter(Acblockarray *parray) {
 			hpblock[i]->useful = false;
 }
 
-void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {
+inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {
 	for (int i = ic - rad; i <= ic + rad; i++) {
 		if (i < 0 || i >= pmat->cols)
 			continue;

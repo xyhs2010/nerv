@@ -49,7 +49,7 @@ void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs);
 void blocksFilter(Acblockarray *parray);
 
 
-inline void erasecore(void *min, double value) {
+inline void erodecore(void *min, double value) {
 	double *dmin = (double *)min;
 	if (*dmin > value)
 		*dmin = value;
