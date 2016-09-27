@@ -8,7 +8,7 @@
 #include "accelerate.h"
 #include <assert.h>
 
-void tranversMat(Acmat *mat, void (*func)(Acmat *, int, int)) {
+void traverseMat(Acmat *mat, void (*func)(Acmat *, int, int)) {
 	for (int index = 0; index < mat->cols * mat->rows; index++) {
 		int ic, ir;
 		if (mat->col_major) {
@@ -19,14 +19,6 @@ void tranversMat(Acmat *mat, void (*func)(Acmat *, int, int)) {
 			ic = index % mat->cols;
 		}
 		(*func)(mat, ic, ir);
-	}
-}
-
-double valueAt(Acmat *mat, int ic, int ir) {
-	if (mat->col_major) {
-		return mat->data[ic * mat->rows + ir];
-	} else {
-		return mat->data[ir * mat->cols + ic];
 	}
 }
 

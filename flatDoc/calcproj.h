@@ -46,4 +46,21 @@ void projStdsAtAngles(const double *angles, double *stds, int num,  Acblock *blo
 
 void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs);
 
+void blocksFilter(Acblockarray *parray);
+
+
+inline void erasecore(void *min, double value) {
+	double *dmin = (double *)min;
+	if (*dmin > value)
+		*dmin = value;
+}
+
+inline void dilatecore(void *max, double value) {
+	double *dmax = (double *)max;
+	if (*dmax < value)
+		*dmax = value;
+}
+
+void traverseMatLocal(Acmat *pmat, Acmat *pout, int rad, void (*callback)(void *, double));
+
 #endif /* CALCPROJ_H_ */

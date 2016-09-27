@@ -27,10 +27,28 @@ typedef struct {
 	bool col_major;
 } Acmat;
 
-void tranversMat(Acmat *mat, void (*func)(Acmat *, int, int));
+void traverseMat(Acmat *mat, void (*func)(Acmat *, int, int));
 void destroyMat(Acmat *mat);
 
-double valueAt(Acmat *mat, int ic, int ir);
+inline double valueAt(Acmat *mat, int ic, int ir);
+inline void setvalue(double value, Acmat *mat, int ic, int ir);
+
+double valueAt(Acmat *mat, int ic, int ir) {
+	if (mat->col_major) {
+		return mat->data[ic * mat->rows + ir];
+	} else {
+		return mat->data[ir * mat->cols + ic];
+	}
+}
+
+void setvalue(double value, Acmat *mat, int ic, int ir) {
+	if (mat->col_major) {
+		mat->data[ic * mat->rows + ir] = value;
+	} else {
+		mat->data[ir * mat->cols + ic] = value;
+	}
+}
+
 
 double acmean(double *values, double *weights, int num);
 double acvariance(double *values, double *weights, int num);

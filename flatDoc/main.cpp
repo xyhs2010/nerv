@@ -50,79 +50,9 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	Acblockarray blockarray = createBlocks(&srcmat);
-
-	double angles[ANGLE_NUM];
-	double stds[ANGLE_NUM];
-	for (int i = 0; i < ANGLE_NUM; i++) {
-		angles[i] = (M_PI * i) / ANGLE_NUM;
-	}
-
-	int mini, maxi;
-	double angle;
 	char text[30];
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
-		projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
-		maxi = acmaxIndex(stds, ANGLE_NUM);
-		mini = acminIndex(stds, ANGLE_NUM);
-		pblock->maxAngle = angles[maxi];
-		pblock->maxWeight = stds[maxi];
-		pblock->minAngle = angles[mini];
-		pblock->minWeight = stds[mini];
-		pblock->useful = true;
 
-//		if (stds[maxi] - stds[mini] < 5 ||
-//				stds[maxi] / stds[mini] < 2) {
-//			pblock->useful = false;
-//		}
-	}
-
-	Mat opened;
-	int open_r = 8;
-	Mat element = getStructuringElement(MORPH_RECT, Size(open_r * 2 + 1, open_r * 2 + 1), Point(open_r, open_r));
-	morphologyEx(gray, opened, MORPH_OPEN, element);
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
-		if (opened.at<uchar>(pblock->centerr, pblock->centerc) > 128) {
-			pblock->useful = false;
-		}
-	}
-
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
-		int neibourIndexs[4];
-		int wrongSum = 0;
-		double neibAngle;
-		obtainNeibourAcblocks(&blockarray, i, neibourIndexs);
-		for (int j = 0; j < 4; j++) {
-			if (neibourIndexs[j] < 0 ||
-					!blockarray.blocks[neibourIndexs[j]].useful) {
-				continue;
-			}
-			neibAngle = blockarray.blocks[neibourIndexs[j]].maxAngle;
-			if (abs(neibAngle - pblock->maxAngle) > M_PI/4)
-				wrongSum++;
-		}
-		if (wrongSum > 1) {
-//			pblock->useful = false;
-		}
-	}
-
-	Acblock *vpblock[1000], *hpblock[1000];
-	int vi = 0, hi = 0;
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
-		if (pblock->maxAngle < M_PI / 6 || pblock->maxAngle > M_PI * 5 / 6)
-			hpblock[hi++] = pblock;
-		else if (pblock->maxAngle > M_PI / 3 && pblock->maxAngle < M_PI * 2 / 3)
-			vpblock[vi++] = pblock;
-	}
-	if (hi > vi)
-		for (int i = 0; i < vi; i++)
-			vpblock[i]->useful = false;
-	else
-		for (int i = 0; i < hi; i++)
-			hpblock[i]->useful = false;
+	blocksFilter(&blockarray);
 
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock block = blockarray.blocks[i];

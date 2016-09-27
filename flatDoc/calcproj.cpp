@@ -10,9 +10,11 @@
 #include <stdio.h>
 #include <math.h>
 
+#define ANGLE_NUM (16)
+
 Acblockarray createBlocks(Acmat *mat) {
 	int maxL = mat->cols > mat->rows ? mat->cols : mat->rows;
-	int radius = maxL / 28;
+	int radius = maxL / 35;
 	if (radius < 8)
 		radius = 8;
 	int blockwid = 2 * radius + 1;
@@ -172,4 +174,123 @@ void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs) {
 			// down
 			neibourIndexs[2] = index + array->cols;
 	}
+}
+
+void blocksFilter(Acblockarray *parray) {
+	Acblockarray blockarray = *parray;
+	double angles[ANGLE_NUM];
+	double stds[ANGLE_NUM];
+	for (int i = 0; i < ANGLE_NUM; i++) {
+		angles[i] = (M_PI * i) / ANGLE_NUM;
+	}
+
+	int mini, maxi;
+	double angle;
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock *pblock = blockarray.blocks + i;
+		projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
+		maxi = acmaxIndex(stds, ANGLE_NUM);
+		mini = acminIndex(stds, ANGLE_NUM);
+		pblock->maxAngle = angles[maxi];
+		pblock->maxWeight = stds[maxi];
+		pblock->minAngle = angles[mini];
+		pblock->minWeight = stds[mini];
+		pblock->useful = true;
+
+//		if (stds[maxi] - stds[mini] < 5 ||
+//				stds[maxi] / stds[mini] < 2) {
+//			pblock->useful = false;
+//		}
+	}
+
+//	Mat opened;
+//	int open_r = 8;
+//	Mat element = getStructuringElement(MORPH_RECT, Size(open_r * 2 + 1, open_r * 2 + 1), Point(open_r, open_r));
+//	morphologyEx(gray, opened, MORPH_OPEN, element);
+//	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+//		Acblock *pblock = blockarray.blocks + i;
+//		if (opened.at<uchar>(pblock->centerr, pblock->centerc) > 128) {
+//			pblock->useful = false;
+//		}
+//	}
+	Acmat *erased = (Acmat *)malloc(sizeof(Acmat));
+	Acmat *opened = (Acmat *)malloc(sizeof(Acmat));
+	traverseMatLocal(blockarray.blocks[0].mat, erased, 8, erasecore);
+	traverseMatLocal(erased, opened, 8, dilatecore);
+	destroyMat(erased);
+	free(erased);
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock *pblock = blockarray.blocks + i;
+		if (valueAt(opened, pblock->centerc, pblock->centerr) > 128) {
+			pblock->useful = false;
+		}
+	}
+	destroyMat(opened);
+	free(opened);
+
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock *pblock = blockarray.blocks + i;
+		int neibourIndexs[4];
+		int wrongSum = 0;
+		double neibAngle;
+		obtainNeibourAcblocks(&blockarray, i, neibourIndexs);
+		for (int j = 0; j < 4; j++) {
+			if (neibourIndexs[j] < 0 ||
+					!blockarray.blocks[neibourIndexs[j]].useful) {
+				continue;
+			}
+			neibAngle = blockarray.blocks[neibourIndexs[j]].maxAngle;
+			if (abs(neibAngle - pblock->maxAngle) > M_PI/4)
+				wrongSum++;
+		}
+		if (wrongSum > 1) {
+//			pblock->useful = false;
+		}
+	}
+
+	Acblock *vpblock[1000], *hpblock[1000];
+	int vi = 0, hi = 0;
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock *pblock = blockarray.blocks + i;
+		if (pblock->maxAngle < M_PI / 6 || pblock->maxAngle > M_PI * 5 / 6)
+			hpblock[hi++] = pblock;
+		else if (pblock->maxAngle > M_PI / 3 && pblock->maxAngle < M_PI * 2 / 3)
+			vpblock[vi++] = pblock;
+	}
+	if (hi > vi)
+		for (int i = 0; i < vi; i++)
+			vpblock[i]->useful = false;
+	else
+		for (int i = 0; i < hi; i++)
+			hpblock[i]->useful = false;
+}
+
+void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {
+	for (int i = ic - rad; i <= ic + rad; i++) {
+		if (i < 0 || i >= pmat->cols)
+			continue;
+		for (int j = ir - rad; j <= ir + rad; j++) {
+			if (j < 0 || j >= pmat->rows)
+				continue;
+			callback(handler, valueAt(pmat, i, j));
+		}
+	}
+}
+
+void traverseMatLocal(Acmat *pmat, Acmat *pout, int rad, void (*callback)(void *, double)) {
+	if (pout == NULL) {
+		pout = (Acmat *)malloc(sizeof(Acmat));
+	}
+	pout->col_major = pmat->col_major;
+	pout->cols = pmat->cols;
+	pout->rows = pmat->rows;
+	pout->data = (double *)malloc(pout->rows * pout->cols * sizeof(double));
+
+	double newval;
+	for (int ic = 0; ic < pout->cols; ic++)
+		for (int ir = 0; ir < pout->rows; ir++) {
+			newval = valueAt(pmat, ic, ir);
+			localIter(pmat, ic, ir, rad, &newval, callback);
+			setvalue(newval, pout, ic, ir);
+		}
 }
