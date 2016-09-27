@@ -8,6 +8,15 @@
 #include "accelerate.h"
 #include <assert.h>
 
+Acmat *acmatLikeMat(Acmat *origin) {
+	Acmat *newmat = (Acmat *)malloc(sizeof(Acmat));
+	newmat->col_major = origin->col_major;
+	newmat->cols = origin->cols;
+	newmat->rows = origin->rows;
+	newmat->data = NULL;
+	return newmat;
+}
+
 void traverseMat(Acmat *mat, void (*func)(Acmat *, int, int)) {
 	for (int index = 0; index < mat->cols * mat->rows; index++) {
 		int ic, ir;

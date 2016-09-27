@@ -203,20 +203,36 @@ void blocksFilter(Acblockarray *parray) {
 //		}
 	}
 
-	Acmat *erased = (Acmat *)malloc(sizeof(Acmat));
-	Acmat *opened = (Acmat *)malloc(sizeof(Acmat));
-	traverseMatLocal(blockarray.blocks[0].mat, erased, 8, erodecore);
-	traverseMatLocal(erased, opened, 8, dilatecore);
-	destroyMat(erased);
-	free(erased);
+	Acmat *origin = blockarray.blocks[0].mat;
+	Acmat *binary = acmatLikeMat(origin);
+	Acmat *erode = acmatLikeMat(origin);
+	Acmat *opened = acmatLikeMat(origin);
+	binary->data = (double *)malloc(origin->rows * origin->cols * sizeof(double));
+	for (int i = 0; i < origin->cols * origin->rows; i++)
+		binary->data[i] = origin->data[i] > 127 ? 1 : 0;
+
+	for (int i = 0; i < 8; i++) {
+		traverseMatLocal(binary, erode, 1, erodecore);
+		free(binary->data);
+		binary->data = erode->data;
+		erode->data = NULL;
+	}
+	for (int i = 0; i < 8; i++) {
+		traverseMatLocal(binary, opened, 1, dilatecore);
+		free(binary->data);
+		binary->data = opened->data;
+		opened->data = NULL;
+	}
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock *pblock = blockarray.blocks + i;
-		if (valueAt(opened, pblock->centerc, pblock->centerr) > 128) {
+		if (valueAt(binary, pblock->centerc, pblock->centerr) > 0) {
 			pblock->useful = false;
 		}
 	}
-	destroyMat(opened);
+	destroyMat(binary);
+	free(binary);
 	free(opened);
+	free(erode);
 
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock *pblock = blockarray.blocks + i;
@@ -256,10 +272,10 @@ void blocksFilter(Acblockarray *parray) {
 }
 
 inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {
-	for (int i = ic - rad; i <= ic + rad; i++) {
+	for (int i = ic - rad; i < ic + rad; i++) {
 		if (i < 0 || i >= pmat->cols)
 			continue;
-		for (int j = ir - rad; j <= ir + rad; j++) {
+		for (int j = ir - rad; j < ir + rad; j++) {
 			if (j < 0 || j >= pmat->rows)
 				continue;
 			callback(handler, valueAt(pmat, i, j));
@@ -269,12 +285,10 @@ inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void 
 
 void traverseMatLocal(Acmat *pmat, Acmat *pout, int rad, void (*callback)(void *, double)) {
 	if (pout == NULL) {
-		pout = (Acmat *)malloc(sizeof(Acmat));
+		pout = acmatLikeMat(pmat);
 	}
-	pout->col_major = pmat->col_major;
-	pout->cols = pmat->cols;
-	pout->rows = pmat->rows;
-	pout->data = (double *)malloc(pout->rows * pout->cols * sizeof(double));
+	if (pout->data == NULL)
+		pout->data = (double *)malloc(pout->rows * pout->cols * sizeof(double));
 
 	double newval;
 	for (int ic = 0; ic < pout->cols; ic++)
