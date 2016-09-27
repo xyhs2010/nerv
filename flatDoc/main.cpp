@@ -71,32 +71,19 @@ int main(int argc, char** argv)
 		pblock->minWeight = stds[mini];
 		pblock->useful = true;
 
-		if (stds[maxi] - stds[mini] < 5 ||
-				stds[maxi] / stds[mini] < 2) {
-			pblock->useful = false;
-		}
+//		if (stds[maxi] - stds[mini] < 5 ||
+//				stds[maxi] / stds[mini] < 2) {
+//			pblock->useful = false;
+//		}
 	}
 
-//	Mat opened;
-//	int open_r = 8
-//	Mat element = getStructuringElement(MORPH_RECT, Size(open_r * 2 + 1, open_r * 2 + 1), Point(open_r, open_r));
-//	morphologyEx(gray, opened, MORPH_OPEN, element);
+	Mat opened;
+	int open_r = 8;
+	Mat element = getStructuringElement(MORPH_RECT, Size(open_r * 2 + 1, open_r * 2 + 1), Point(open_r, open_r));
+	morphologyEx(gray, opened, MORPH_OPEN, element);
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock *pblock = blockarray.blocks + i;
-		int midR = pblock->radius / 5;
-		bool state = false;
-		for (int j = pblock->centerc - midR; j <= pblock->centerc + midR; j++) {
-			for (int k = pblock->centerr - midR; k <= pblock->centerr + midR; k++) {
-				if (valueAt(pblock->mat, j, k) < 128) {
-					state = true;
-					break;
-				}
-			}
-			if (state == true) {
-				break;
-			}
-		}
-		if (state == false) {
+		if (opened.at<uchar>(pblock->centerr, pblock->centerc) > 128) {
 			pblock->useful = false;
 		}
 	}
@@ -117,9 +104,25 @@ int main(int argc, char** argv)
 				wrongSum++;
 		}
 		if (wrongSum > 1) {
-			pblock->useful = false;
+//			pblock->useful = false;
 		}
 	}
+
+	Acblock *vpblock[1000], *hpblock[1000];
+	int vi = 0, hi = 0;
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		Acblock *pblock = blockarray.blocks + i;
+		if (pblock->maxAngle < M_PI / 6 || pblock->maxAngle > M_PI * 5 / 6)
+			hpblock[hi++] = pblock;
+		else if (pblock->maxAngle > M_PI / 3 && pblock->maxAngle < M_PI * 2 / 3)
+			vpblock[vi++] = pblock;
+	}
+	if (hi > vi)
+		for (int i = 0; i < vi; i++)
+			vpblock[i]->useful = false;
+	else
+		for (int i = 0; i < hi; i++)
+			hpblock[i]->useful = false;
 
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		Acblock block = blockarray.blocks[i];
