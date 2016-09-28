@@ -59,6 +59,68 @@ int main(int argc, char** argv)
 	int segments[MAX_PAGE][2];
 	int segnum = blocksSeg(&blockarray, segments);
 
+	double coefs[4 * FIT_ORDER * FIT_ORDER] = {0};
+	double singlep[4 * FIT_ORDER * FIT_ORDER] = {0};
+	double zs[2 * FIT_ORDER] = {0};
+	double singlez[2 * FIT_ORDER] = {0};
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		pblock = blockarray.blocks + i;
+		if (!pblock->useful)
+			continue;
+		double x, y, z;
+		z = pblock->maxAngle;
+		if (blockarray.h_major) {
+			x = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
+			y = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
+		} else {
+			y = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
+			x = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
+		}
+		double value = 1;
+		for (int j = 0 ;j < FIT_ORDER; j++) {
+			singlep[j] = value;
+			value *= x;
+		}
+		double *pnow = singlep;
+		// 第一列
+		cblas_dcopy(FIT_ORDER, pnow, 1, pnow + FIT_ORDER, 1);
+		cblas_dscal(FIT_ORDER, y, pnow + FIT_ORDER, 1);
+
+		// singlez
+		cblas_dcopy(FIT_ORDER * 2, pnow, 1, singlez, 1);
+		cblas_dscal(FIT_ORDER * 2, z, singlez, 1);
+		cblas_daxpy(FIT_ORDER * 2, 1, singlez, 1, zs, 1);
+
+		// 前 FIT_ORDER 列
+		for (int j = 1; j < FIT_ORDER; j++) {
+			cblas_dcopy(FIT_ORDER * 2, pnow, 1,
+					pnow + 2 * FIT_ORDER, 1);
+			cblas_dscal(FIT_ORDER * 2, x, pnow + 2 * FIT_ORDER, 1);
+			pnow += 2 * FIT_ORDER;
+		}
+
+		// 所有
+		pnow += 2 * FIT_ORDER;
+		cblas_dcopy(FIT_ORDER * FIT_ORDER * 2, singlep, 1, pnow, 1);
+		cblas_dscal(FIT_ORDER * FIT_ORDER * 2, y, pnow, 1);
+
+		cblas_daxpy(FIT_ORDER * FIT_ORDER * 4, 1, singlep, 1, coefs, 1);
+
+//		printf("x: %f, y: %f\n",x,y);
+
+	}
+//	for (int j = 0; j < 8; j++) {
+//		printf("%f, ", zs[j]);
+//	}
+//	printf("\n");
+	int ipiv[2 * FIT_ORDER];
+	LAPACKE_dgesv(LAPACK_COL_MAJOR, 2 * FIT_ORDER, 1, coefs, 2 * FIT_ORDER, ipiv, zs, 2 * FIT_ORDER);
+
+//	for (int j = 0; j < 8; j++) {
+//		printf("%f, ", zs[j]);
+//	}
+//	printf("\n");
+
 
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		pblock = blockarray.blocks + i;
@@ -67,11 +129,15 @@ int main(int argc, char** argv)
 		}
 
 		double x, y;
-		x = 10 * cos(pblock->maxAngle); y = 10 * sin(pblock->maxAngle);
+		double angle = pblock->maxAngle;
+		if (blockarray.h_major) {
+			angle -= M_PI / 2;
+		}
+		x = 10 * cos(angle); y = 10 * sin(angle);
 		Point p1(pblock->centerc - x, pblock->centerr - y), p2(pblock->centerc + x, pblock->centerr + y);
 		line(src, p1, p2, Scalar(0, 0, 255), 1);
 
-		sprintf(text, "(%.0f, %.0f)", pblock->maxWeight, pblock->minWeight);
+		sprintf(text, "(%.3f, %.0f)", pblock->maxAngle, pblock->minWeight);
 		putText(src, text, Point(pblock->centerc - 20, pblock->centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
 	}
 

@@ -217,8 +217,9 @@ void blocksFilter(Acblockarray *parray) {
 
 	int mini, maxi;
 	double angle;
+	Acblock *pblock;
 	for (int i = 0; i < parray->cols * parray->rows; i++) {
-		Acblock *pblock = parray->blocks + i;
+		pblock = parray->blocks + i;
 		projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
 		maxi = acmaxIndex(stds, ANGLE_NUM);
 		mini = acminIndex(stds, ANGLE_NUM);
@@ -238,7 +239,7 @@ void blocksFilter(Acblockarray *parray) {
 		intextfilter(parray->blocks + i);
 
 //	for (int i = 0; i < parray->cols * parray->rows; i++) {
-//		Acblock *pblock = parray->blocks + i;
+//		pblock = parray->blocks + i;
 //		int neibourIndexs[4];
 //		int wrongSum = 0;
 //		double neibAngle;
@@ -260,7 +261,7 @@ void blocksFilter(Acblockarray *parray) {
 	Acblock *vpblock[1000], *hpblock[1000];
 	int vi = 0, hi = 0;
 	for (int i = 0; i < parray->cols * parray->rows; i++) {
-		Acblock *pblock = parray->blocks + i;
+		pblock = parray->blocks + i;
 		if (pblock->maxAngle < M_PI / 6 || pblock->maxAngle > M_PI * 5 / 6)
 			hpblock[hi++] = pblock;
 		else if (pblock->maxAngle > M_PI / 3 && pblock->maxAngle < M_PI * 2 / 3)
@@ -275,7 +276,15 @@ void blocksFilter(Acblockarray *parray) {
 		for (int i = 0; i < hi; i++)
 			hpblock[i]->useful = false;
 	}
-
+	for (int i = 0; i < parray->cols * parray->rows; i++) {
+		pblock = parray->blocks + i;
+		if (parray->h_major) {
+			pblock->maxAngle += M_PI / 2;
+			if (pblock->maxAngle > M_PI) {
+				pblock->maxAngle -= M_PI;
+			}
+		}
+	}
 }
 
 int blocksSeg(Acblockarray *parray, int (*segments)[2]) {
@@ -291,12 +300,6 @@ int blocksSeg(Acblockarray *parray, int (*segments)[2]) {
 	Acblock *pblock;
 	for (int i = 0; i < parray->cols * parray->rows; i++) {
 		pblock = parray->blocks + i;
-		if (parray->h_major) {
-			pblock->maxAngle += M_PI / 2;
-			if (pblock->maxAngle > M_PI) {
-				pblock->maxAngle -= M_PI;
-			}
-		}
 		if (pblock->useful) {
 			if (parray->col_major) {
 				ic = i / parray->rows;
@@ -318,7 +321,7 @@ int blocksSeg(Acblockarray *parray, int (*segments)[2]) {
 	for (int i = 0; i < segL; i++) {
 		if (num[i] > 0)
 			sum[i] /= num[i];
-		printf("%d  sum: %f, num: %d\n ", i, sum[i], num[i]);
+//		printf("%d  sum: %f, num: %d\n ", i, sum[i], num[i]);
 	}
 
 	int lastb, j; double diff;
