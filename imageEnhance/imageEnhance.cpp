@@ -92,7 +92,7 @@ cv::Mat imageEnhance(cv::Mat input) {
 	Mat fil_RateGray;
 	cvtColor(fil_Rate, fil_RateGray, CV_BGR2GRAY);
 	fil_valmean = mean(fil_Rate);
-	Scalar fil_mean1 = mean(input, fil_RateGray < fil_valmean[0]);
+	Scalar fil_mean1 = mean(input, fil_RateGray > fil_valmean[0] * 1.1);
 	bool rb_if = false;
 	if (channels == 3) {
 		rb_if = ((fil_mean[0] + fil_mean[1] + fil_mean[2]) > (fil_mean1[0] + fil_mean1[1] + fil_mean1[2]));
