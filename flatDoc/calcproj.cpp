@@ -278,6 +278,81 @@ void blocksFilter(Acblockarray *parray) {
 
 }
 
+int blocksSeg(Acblockarray *parray, int (*segments)[2]) {
+	int segnum = 0;
+	int segL = parray->h_major ? parray->cols : parray->rows;
+	double *sum = (double *)malloc(segL * sizeof(double));
+	int *num = (int *)malloc(segL * sizeof(int));
+	for (int i = 0; i < segL; i++) {
+		sum[i] = 0;
+		num[i] = 0;
+	}
+	int ir, ic;
+	Acblock *pblock;
+	for (int i = 0; i < parray->cols * parray->rows; i++) {
+		pblock = parray->blocks + i;
+		if (parray->h_major) {
+			pblock->maxAngle += M_PI / 2;
+			if (pblock->maxAngle > M_PI) {
+				pblock->maxAngle -= M_PI;
+			}
+		}
+		if (pblock->useful) {
+			if (parray->col_major) {
+				ic = i / parray->rows;
+				ir = i % parray->rows;
+			} else {
+				ic = i % parray->cols;
+				ir = i / parray->cols;
+			}
+			if (parray->h_major) {
+				sum[ic] += pblock->maxAngle;
+				num[ic] += 1;
+			} else {
+				sum[ir] += pblock->maxAngle;
+				num[ir] += 1;
+			}
+		}
+	}
+
+	for (int i = 0; i < segL; i++) {
+		if (num[i] > 0)
+			sum[i] /= num[i];
+		printf("%d  sum: %f, num: %d\n ", i, sum[i], num[i]);
+	}
+
+	int lastb, j; double diff;
+	int blockwid = parray->blocks[0].endc - parray->blocks[0].startc;
+	int lastSeg = 1;
+	for (int i = 2; i < segL - 1; i++) {
+		if (num[i] >= 3 && num[i + 1] >=3) {
+			j = i;
+			lastb = i;
+			while (--j > lastSeg) {
+				if (num[j] > 3 && num[j - 1] > 3) {
+					lastb = j;
+					break;
+				}
+			}
+			if (lastb != i) {
+				diff = sum[i] - sum[lastb];
+				if (fabs(diff) > M_PI/6) {
+					if (diff * (sum[i+1] - sum[i]) < 0 && diff * (sum[lastb] - sum[lastb-1]) < 0) {
+						segments[segnum][0] = (lastb + 0.5) * blockwid;
+						segments[segnum][1] = (i + 0.5) * blockwid;
+						segnum++;
+						lastSeg = i;
+					}
+				}
+			}
+		}
+	}
+
+	free(sum);
+	free(num);
+	return segnum;
+}
+
 inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {
 	for (int i = ic - rad; i < ic + rad; i++) {
 		if (i < 0 || i >= pmat->cols)

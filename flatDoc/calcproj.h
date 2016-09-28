@@ -52,6 +52,8 @@ void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs);
 
 void blocksFilter(Acblockarray *parray);
 
+int blocksSeg(Acblockarray *parray, int (*segments)[2]);
+
 void traverseMatLocal(Acmat *pmat, Acmat *pout, int rad, void (*callback)(void *, double));
 
 #endif /* CALCPROJ_H_ */
