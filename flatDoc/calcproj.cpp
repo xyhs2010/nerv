@@ -356,6 +356,66 @@ int blocksSeg(Acblockarray *parray, int (*segments)[2]) {
 	return segnum;
 }
 
+void polyfit(Acblockarray *parray, double *zs) {
+	double coefs[4 * FIT_ORDER * FIT_ORDER] = {0};
+	double singlep[4 * FIT_ORDER * FIT_ORDER] = {0};
+	double singlez[2 * FIT_ORDER] = {0};
+	Acblock *pblock;
+	for (int i = 0; i < parray->cols * parray->rows; i++) {
+		pblock = parray->blocks + i;
+		if (!pblock->useful)
+			continue;
+		double x, y, z;
+		z = pblock->maxAngle;
+		if (parray->h_major) {
+			x = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
+			y = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
+		} else {
+			y = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
+			x = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
+		}
+		double value = 1;
+		for (int j = 0 ;j < FIT_ORDER; j++) {
+			singlep[j] = value;
+			value *= x;
+		}
+		double *pnow = singlep;
+		// 第一列
+		cblas_dcopy(FIT_ORDER, pnow, 1, pnow + FIT_ORDER, 1);
+		cblas_dscal(FIT_ORDER, y, pnow + FIT_ORDER, 1);
+
+		// singlez
+		cblas_dcopy(FIT_ORDER * 2, pnow, 1, singlez, 1);
+		cblas_dscal(FIT_ORDER * 2, z, singlez, 1);
+		cblas_daxpy(FIT_ORDER * 2, 1, singlez, 1, zs, 1);
+
+		// 前 FIT_ORDER 列
+		for (int j = 1; j < FIT_ORDER; j++) {
+			cblas_dcopy(FIT_ORDER * 2, pnow, 1,
+					pnow + 2 * FIT_ORDER, 1);
+			cblas_dscal(FIT_ORDER * 2, x, pnow + 2 * FIT_ORDER, 1);
+			pnow += 2 * FIT_ORDER;
+		}
+
+		// 所有
+		pnow += 2 * FIT_ORDER;
+		cblas_dcopy(FIT_ORDER * FIT_ORDER * 2, singlep, 1, pnow, 1);
+		cblas_dscal(FIT_ORDER * FIT_ORDER * 2, y, pnow, 1);
+
+		cblas_daxpy(FIT_ORDER * FIT_ORDER * 4, 1, singlep, 1, coefs, 1);
+
+//		printf("x: %f, y: %f\n",x,y);
+
+	}
+//	for (int j = 0; j < 8; j++) {
+//		printf("%f, ", zs[j]);
+//	}
+//	printf("\n");
+	int ipiv[2 * FIT_ORDER];
+	// 解线性方程
+	LAPACKE_dgesv(LAPACK_COL_MAJOR, 2 * FIT_ORDER, 1, coefs, 2 * FIT_ORDER, ipiv, zs, 2 * FIT_ORDER);
+}
+
 inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {
 	for (int i = ic - rad; i < ic + rad; i++) {
 		if (i < 0 || i >= pmat->cols)
