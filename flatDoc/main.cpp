@@ -8,7 +8,6 @@
 #include "calcproj.h"
 #include <math.h>
 
-#define ANGLE_NUM (16)
 
 using namespace std;
 using namespace cv;
@@ -90,22 +89,22 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	double *pages = (double *)malloc(segL * sizeof(double));
-	int pagenum = 0, lastb, j; double diff;
-	pages[pagenum++] = 0;
+	int segments[MAX_PAGE][2];
+	int segnum = 0, lastb, j; double diff;
 
-	for (int i = 0; i < segL; i++) {
-		if (num[i] > 0)
-			sum[i] /= num[i];
-		printf("%d  sum: %f, num: %d\n ", i, sum[i], num[i]);
-	}
+//	for (int i = 0; i < segL; i++) {
+//		if (num[i] > 0)
+//			sum[i] /= num[i];
+//		printf("%d  sum: %f, num: %d\n ", i, sum[i], num[i]);
+//	}
 
 	int blockwid = blockarray.blocks[0].endc - blockarray.blocks[0].startc;
+	int lastSeg = 1;
 	for (int i = 2; i < segL - 1; i++) {
 		if (num[i] >= 3 && num[i + 1] >=3) {
 			j = i;
 			lastb = i;
-			while (--j > 1) {
+			while (--j > lastSeg) {
 				if (num[j] > 3 && num[j - 1] > 3) {
 					lastb = j;
 					break;
@@ -114,15 +113,17 @@ int main(int argc, char** argv)
 			if (lastb != i) {
 				diff = sum[i] - sum[lastb];
 				if (abs(diff) > M_PI/6) {
-					if (diff * (sum[i+1] - sum[i]) < 0 && diff * (sum[lastb] - sum[lastb-1]) < 0)
-						pages[pagenum++] = (lastb + i + 1) * blockwid / 2;
+					if (diff * (sum[i+1] - sum[i]) < 0 && diff * (sum[lastb] - sum[lastb-1]) < 0) {
+						segments[segnum][0] = (lastb + 0.5) * blockwid;
+						segments[segnum][1] = (i + 0.5) * blockwid;
+						segnum++;
+						lastSeg = i;
+					}
 				}
 			}
 		}
 	}
-	pages[pagenum++] = blockarray.h_major ? blockarray.mat->cols : blockarray.mat->rows;
 
-	free(pages);
 	free(sum);
 	free(num);
 

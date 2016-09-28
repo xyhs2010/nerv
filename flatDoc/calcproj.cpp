@@ -11,8 +11,6 @@
 #include <math.h>
 #include <time.h>
 
-#define ANGLE_NUM (16)
-
 Acblockarray createBlocks(Acmat *mat) {
 	int maxL = mat->cols > mat->rows ? mat->cols : mat->rows;
 	int radius = maxL / 35;
