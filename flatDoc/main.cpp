@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 	// page segment
 	int segL = blockarray.h_major ? blockarray.cols : blockarray.rows;
 	double *sum = (double *)malloc(segL * sizeof(double));
-	double *num = (double *)malloc(segL * sizeof(double));
+	int *num = (int *)malloc(segL * sizeof(int));
 	for (int i = 0; i < segL; i++) {
 		sum[i] = 0;
 		num[i] = 0;
@@ -73,35 +73,54 @@ int main(int argc, char** argv)
 				pblock->maxAngle -= M_PI;
 			}
 		}
-		pblock = blockarray.blocks + i;
-		if (blockarray.col_major) {
-			ic = i / blockarray.rows;
-			ir = i % blockarray.rows;
-		} else {
-			ic = i % blockarray.cols;
-			ir = i / blockarray.cols;
+		if (pblock->useful) {
+			if (blockarray.col_major) {
+				ic = i / blockarray.rows;
+				ir = i % blockarray.rows;
+			} else {
+				ic = i % blockarray.cols;
+				ir = i / blockarray.cols;
+			}
+			if (blockarray.h_major) {
+				sum[ic] += pblock->maxAngle;
+				num[ic] += 1;
+			} else {
+				sum[ir] += pblock->maxAngle;
+				num[ir] += 1;
+			}
 		}
-		if (blockarray.h_major) {
-			sum[ic] += pblock->maxAngle;
-			num[ic] += 1;
-		} else {
-			sum[ir] += pblock->maxAngle;
-			num[ir] += 1;
-		}
-	}
-	for (int i = 0; i < segL; i++) {
-		if (num[i] > 1)
-			sum[i] /= num[i];
 	}
 	double *pages = (double *)malloc(segL * sizeof(double));
-	int pagenum = 0, zerolines = 0;
+	int pagenum = 0, lastb, j; double diff;
 	pages[pagenum++] = 0;
 
 	for (int i = 0; i < segL; i++) {
-		if (num[i] < 3) {
+		if (num[i] > 0)
+			sum[i] /= num[i];
+		printf("%d  sum: %f, num: %d\n ", i, sum[i], num[i]);
+	}
 
+	int blockwid = blockarray.blocks[0].endc - blockarray.blocks[0].startc;
+	for (int i = 2; i < segL - 1; i++) {
+		if (num[i] >= 3 && num[i + 1] >=3) {
+			j = i;
+			lastb = i;
+			while (--j > 1) {
+				if (num[j] > 3 && num[j - 1] > 3) {
+					lastb = j;
+					break;
+				}
+			}
+			if (lastb != i) {
+				diff = sum[i] - sum[lastb];
+				if (abs(diff) > M_PI/6) {
+					if (diff * (sum[i+1] - sum[i]) < 0 && diff * (sum[lastb] - sum[lastb-1]) < 0)
+						pages[pagenum++] = (lastb + i + 1) * blockwid / 2;
+				}
+			}
 		}
 	}
+	pages[pagenum++] = blockarray.h_major ? blockarray.mat->cols : blockarray.mat->rows;
 
 	free(pages);
 	free(sum);
