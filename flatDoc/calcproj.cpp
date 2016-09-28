@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 
 #define ANGLE_NUM (16)
 
@@ -21,6 +22,7 @@ Acblockarray createBlocks(Acmat *mat) {
 	int numc = mat->cols / blockwid;
 	int numr = mat->rows / blockwid;
 	Acblockarray blockarray;
+	blockarray.mat = mat;
 	blockarray.col_major = true;
 	blockarray.cols = numc;
 	blockarray.rows = numr;
@@ -176,6 +178,38 @@ void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs) {
 	}
 }
 
+void intextfilter(Acblock *pblock) {
+	int intextLocal = 10;
+	bool intext[4];
+	int orc, orr;
+	for (int oind = 0; oind < 4; oind++) {
+		orc = oind % 2 == 1 ? 1 : -1;
+		orr = oind / 2 == 1 ? 1 : -1;
+		int ic, ir;
+		bool ointext = false;
+		for (int dc = 0; dc <= intextLocal; dc++) {
+			ic = pblock->centerc + orc * dc;
+			if (ic < 0 || ic >= pblock->mat->cols)
+				continue;
+			for (int dr = 0; dr <= intextLocal; dr++) {
+				ir = pblock->centerr + orr * dr;
+				if (ir < 0 || ir >= pblock->mat->rows)
+					continue;
+				if (valueAt(pblock->mat, ic, ir) < 138) {
+					ointext = true;
+					break;
+				}
+			}
+			if (ointext == true)
+				break;
+		}
+		intext[oind] = ointext;
+	}
+	if (!((intext[0] & intext[3]) | (intext[1] & intext[2]))) {
+		pblock->useful = false;
+	}
+}
+
 void blocksFilter(Acblockarray *parray) {
 	Acblockarray blockarray = *parray;
 	double angles[ANGLE_NUM];
@@ -203,56 +237,28 @@ void blocksFilter(Acblockarray *parray) {
 //		}
 	}
 
-	Acmat *origin = blockarray.blocks[0].mat;
-	Acmat *binary = acmatLikeMat(origin);
-	Acmat *erode = acmatLikeMat(origin);
-	Acmat *opened = acmatLikeMat(origin);
-	binary->data = (double *)malloc(origin->rows * origin->cols * sizeof(double));
-	for (int i = 0; i < origin->cols * origin->rows; i++)
-		binary->data[i] = origin->data[i] > 127 ? 1 : 0;
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++)
+		intextfilter(blockarray.blocks + i);
 
-	for (int i = 0; i < 8; i++) {
-		traverseMatLocal(binary, erode, 1, erodecore);
-		free(binary->data);
-		binary->data = erode->data;
-		erode->data = NULL;
-	}
-	for (int i = 0; i < 8; i++) {
-		traverseMatLocal(binary, opened, 1, dilatecore);
-		free(binary->data);
-		binary->data = opened->data;
-		opened->data = NULL;
-	}
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
-		if (valueAt(binary, pblock->centerc, pblock->centerr) > 0) {
-			pblock->useful = false;
-		}
-	}
-	destroyMat(binary);
-	free(binary);
-	free(opened);
-	free(erode);
-
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
-		int neibourIndexs[4];
-		int wrongSum = 0;
-		double neibAngle;
-		obtainNeibourAcblocks(&blockarray, i, neibourIndexs);
-		for (int j = 0; j < 4; j++) {
-			if (neibourIndexs[j] < 0 ||
-					!blockarray.blocks[neibourIndexs[j]].useful) {
-				continue;
-			}
-			neibAngle = blockarray.blocks[neibourIndexs[j]].maxAngle;
-			if (abs(neibAngle - pblock->maxAngle) > M_PI/4)
-				wrongSum++;
-		}
-		if (wrongSum > 1) {
+//	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+//		Acblock *pblock = blockarray.blocks + i;
+//		int neibourIndexs[4];
+//		int wrongSum = 0;
+//		double neibAngle;
+//		obtainNeibourAcblocks(&blockarray, i, neibourIndexs);
+//		for (int j = 0; j < 4; j++) {
+//			if (neibourIndexs[j] < 0 ||
+//					!blockarray.blocks[neibourIndexs[j]].useful) {
+//				continue;
+//			}
+//			neibAngle = blockarray.blocks[neibourIndexs[j]].maxAngle;
+//			if (abs(neibAngle - pblock->maxAngle) > M_PI/4)
+//				wrongSum++;
+//		}
+//		if (wrongSum > 1) {
 //			pblock->useful = false;
-		}
-	}
+//		}
+//	}
 
 	Acblock *vpblock[1000], *hpblock[1000];
 	int vi = 0, hi = 0;
@@ -269,6 +275,7 @@ void blocksFilter(Acblockarray *parray) {
 	else
 		for (int i = 0; i < hi; i++)
 			hpblock[i]->useful = false;
+
 }
 
 inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {

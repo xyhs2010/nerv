@@ -35,6 +35,7 @@ typedef struct {
 	int cols;
 	int rows;
 	bool col_major;
+	Acmat *mat;
 } Acblockarray;
 
 Acblockarray createBlocks(Acmat *mat);
@@ -47,19 +48,6 @@ void projStdsAtAngles(const double *angles, double *stds, int num,  Acblock *blo
 void obtainNeibourAcblocks(Acblockarray *array, int index, int *neibourIndexs);
 
 void blocksFilter(Acblockarray *parray);
-
-
-inline void erodecore(void *min, double value) {
-	double *dmin = (double *)min;
-	if (*dmin > value)
-		*dmin = value;
-}
-
-inline void dilatecore(void *max, double value) {
-	double *dmax = (double *)max;
-	if (*dmax < value)
-		*dmax = value;
-}
 
 void traverseMatLocal(Acmat *pmat, Acmat *pout, int rad, void (*callback)(void *, double));
 
