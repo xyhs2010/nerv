@@ -77,14 +77,14 @@ int main(int argc, char** argv)
 
 		double x, y;
 		double angle = pblock->maxAngle;
-		if (blockarray.h_major) {
-			angle -= M_PI / 2;
+		if (!blockarray.h_major) {
+			angle += M_PI / 2;
 		}
 		x = 10 * cos(angle); y = 10 * sin(angle);
 		Point p1(pblock->centerc - x, pblock->centerr - y), p2(pblock->centerc + x, pblock->centerr + y);
 		line(src, p1, p2, Scalar(0, 0, 255), 1);
 
-		sprintf(text, "(%.3f, %.0f)", pblock->maxAngle, pblock->maxWeight);
+		sprintf(text, "(%.2f, %.0f)", pblock->maxAngle, pblock->maxWeight);
 		putText(src, text, Point(pblock->centerc - 20, pblock->centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
 	}
 

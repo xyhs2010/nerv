@@ -279,10 +279,11 @@ void blocksFilter(Acblockarray *parray) {
 	for (int i = 0; i < parray->cols * parray->rows; i++) {
 		pblock = parray->blocks + i;
 		if (parray->h_major) {
-			pblock->maxAngle += M_PI / 2;
-			if (pblock->maxAngle > M_PI) {
+			if (pblock->maxAngle > M_PI / 2) {
 				pblock->maxAngle -= M_PI;
 			}
+		} else {
+			pblock->maxAngle -= M_PI / 2;
 		}
 	}
 }
@@ -366,7 +367,7 @@ void polyfit(Acblockarray *parray, double *zs) {
 		if (!pblock->useful)
 			continue;
 		double x, y, z;
-		z = pblock->maxAngle;
+		z = tan(pblock->maxAngle);
 		if (parray->h_major) {
 			x = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
 			y = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
