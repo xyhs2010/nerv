@@ -211,7 +211,6 @@ void intextfilter(Acblock *pblock) {
 }
 
 void blocksFilter(Acblockarray *parray) {
-	Acblockarray blockarray = *parray;
 	double angles[ANGLE_NUM];
 	double stds[ANGLE_NUM];
 	for (int i = 0; i < ANGLE_NUM; i++) {
@@ -220,8 +219,8 @@ void blocksFilter(Acblockarray *parray) {
 
 	int mini, maxi;
 	double angle;
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
+	for (int i = 0; i < parray->cols * parray->rows; i++) {
+		Acblock *pblock = parray->blocks + i;
 		projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
 		maxi = acmaxIndex(stds, ANGLE_NUM);
 		mini = acminIndex(stds, ANGLE_NUM);
@@ -237,21 +236,21 @@ void blocksFilter(Acblockarray *parray) {
 //		}
 	}
 
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++)
-		intextfilter(blockarray.blocks + i);
+	for (int i = 0; i < parray->cols * parray->rows; i++)
+		intextfilter(parray->blocks + i);
 
-//	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-//		Acblock *pblock = blockarray.blocks + i;
+//	for (int i = 0; i < parray->cols * parray->rows; i++) {
+//		Acblock *pblock = parray->blocks + i;
 //		int neibourIndexs[4];
 //		int wrongSum = 0;
 //		double neibAngle;
-//		obtainNeibourAcblocks(&blockarray, i, neibourIndexs);
+//		obtainNeibourAcblocks(parray, i, neibourIndexs);
 //		for (int j = 0; j < 4; j++) {
 //			if (neibourIndexs[j] < 0 ||
-//					!blockarray.blocks[neibourIndexs[j]].useful) {
+//					!parray->blocks[neibourIndexs[j]].useful) {
 //				continue;
 //			}
-//			neibAngle = blockarray.blocks[neibourIndexs[j]].maxAngle;
+//			neibAngle = parray->blocks[neibourIndexs[j]].maxAngle;
 //			if (abs(neibAngle - pblock->maxAngle) > M_PI/4)
 //				wrongSum++;
 //		}
@@ -262,19 +261,22 @@ void blocksFilter(Acblockarray *parray) {
 
 	Acblock *vpblock[1000], *hpblock[1000];
 	int vi = 0, hi = 0;
-	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock *pblock = blockarray.blocks + i;
+	for (int i = 0; i < parray->cols * parray->rows; i++) {
+		Acblock *pblock = parray->blocks + i;
 		if (pblock->maxAngle < M_PI / 6 || pblock->maxAngle > M_PI * 5 / 6)
 			hpblock[hi++] = pblock;
 		else if (pblock->maxAngle > M_PI / 3 && pblock->maxAngle < M_PI * 2 / 3)
 			vpblock[vi++] = pblock;
 	}
-	if (hi > vi)
+	if (hi > vi) {
+		parray->h_major = true;
 		for (int i = 0; i < vi; i++)
 			vpblock[i]->useful = false;
-	else
+	} else {
+		parray->h_major = false;
 		for (int i = 0; i < hi; i++)
 			hpblock[i]->useful = false;
+	}
 
 }
 

@@ -52,21 +52,74 @@ int main(int argc, char** argv)
 	Acblockarray blockarray = createBlocks(&srcmat);
 	char text[30];
 
+	Acblock *pblock;
+
 	blocksFilter(&blockarray);
 
+	// page segment
+	int segL = blockarray.h_major ? blockarray.cols : blockarray.rows;
+	double *sum = (double *)malloc(segL * sizeof(double));
+	double *num = (double *)malloc(segL * sizeof(double));
+	for (int i = 0; i < segL; i++) {
+		sum[i] = 0;
+		num[i] = 0;
+	}
+	int ir, ic;
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
-		Acblock block = blockarray.blocks[i];
-		if (!block.useful) {
+		pblock = blockarray.blocks + i;
+		if (blockarray.h_major) {
+			pblock->maxAngle += M_PI / 2;
+			if (pblock->maxAngle > M_PI) {
+				pblock->maxAngle -= M_PI;
+			}
+		}
+		pblock = blockarray.blocks + i;
+		if (blockarray.col_major) {
+			ic = i / blockarray.rows;
+			ir = i % blockarray.rows;
+		} else {
+			ic = i % blockarray.cols;
+			ir = i / blockarray.cols;
+		}
+		if (blockarray.h_major) {
+			sum[ic] += pblock->maxAngle;
+			num[ic] += 1;
+		} else {
+			sum[ir] += pblock->maxAngle;
+			num[ir] += 1;
+		}
+	}
+	for (int i = 0; i < segL; i++) {
+		if (num[i] > 1)
+			sum[i] /= num[i];
+	}
+	double *pages = (double *)malloc(segL * sizeof(double));
+	int pagenum = 0, zerolines = 0;
+	pages[pagenum++] = 0;
+
+	for (int i = 0; i < segL; i++) {
+		if (num[i] < 3) {
+
+		}
+	}
+
+	free(pages);
+	free(sum);
+	free(num);
+
+	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
+		pblock = blockarray.blocks + i;
+		if (!pblock->useful) {
 			continue;
 		}
 
 		double x, y;
-		x = 10 * cos(block.maxAngle); y = 10 * sin(block.maxAngle);
-		Point p1(block.centerc - x, block.centerr - y), p2(block.centerc + x, block.centerr + y);
+		x = 10 * cos(pblock->maxAngle); y = 10 * sin(pblock->maxAngle);
+		Point p1(pblock->centerc - x, pblock->centerr - y), p2(pblock->centerc + x, pblock->centerr + y);
 		line(src, p1, p2, Scalar(0, 0, 255), 1);
 
-		sprintf(text, "(%.0f, %.0f)", block.maxWeight, block.minWeight);
-		putText(src, text, Point(block.centerc - 20, block.centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
+		sprintf(text, "(%.0f, %.0f)", pblock->maxWeight, pblock->minWeight);
+		putText(src, text, Point(pblock->centerc - 20, pblock->centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
 	}
 
 	destroyBlockArray(&blockarray);

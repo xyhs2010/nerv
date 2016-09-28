@@ -36,6 +36,7 @@ typedef struct {
 	int rows;
 	bool col_major;
 	Acmat *mat;
+	bool h_major;
 } Acblockarray;
 
 Acblockarray createBlocks(Acmat *mat);
