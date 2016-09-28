@@ -17,6 +17,27 @@ Acmat *acmatLikeMat(Acmat *origin) {
 	return newmat;
 }
 
+Acmat *changeMajor(Acmat *pmat) {
+	int wl = pmat->cols * pmat->rows;
+	double *newData = (double *)malloc(wl * sizeof(double));
+	int fstL = pmat->col_major ? pmat->cols : pmat->rows;
+	int secL = pmat->col_major ? pmat->rows : pmat->cols;
+	int orini, newi;
+	for (int i = 0; i < fstL; i++) {
+		orini = i * secL;
+		newi = i;
+		while (newi < wl) {
+			newData[newi] = pmat->data[orini];
+			newi += fstL;
+			orini++;
+		}
+	}
+	Acmat *newmat = acmatLikeMat(pmat);
+	newmat->data = newData;
+	newmat->col_major = !pmat->col_major;
+	return newmat;
+}
+
 void traverseMat(Acmat *mat, void (*func)(Acmat *, int, int)) {
 	for (int index = 0; index < mat->cols * mat->rows; index++) {
 		int ic, ir;

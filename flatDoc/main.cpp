@@ -15,7 +15,9 @@ using namespace cv;
 static void help(cv::CommandLineParser *);
 
 // 从 opencv 类型转为 double 数组
-int convertMat(Mat src, Acmat *srcmat);
+int convertFromMat(Mat src, Acmat *srcmat);
+
+Mat convertToMat(Acmat *srcmat);
 
 int main(int argc, char** argv)
 {
@@ -45,7 +47,7 @@ int main(int argc, char** argv)
 	cvtColor(src, gray, CV_BGR2GRAY);
 	src = src * 0.5 + 128;
 	Acmat srcmat;
-	if (convertMat(gray, &srcmat) < 0) {
+	if (convertFromMat(gray, &srcmat) < 0) {
 		return -1;
 	}
 	Acblockarray blockarray = createBlocks(&srcmat);
@@ -113,7 +115,7 @@ static void help(cv::CommandLineParser *parser)
     parser->printMessage();
 }
 
-int convertMat(Mat src, Acmat *srcmat) {
+int convertFromMat(Mat src, Acmat *srcmat) {
 	if (src.type() != CV_8UC1) {
 		return -1;
 	}
@@ -129,4 +131,20 @@ int convertMat(Mat src, Acmat *srcmat) {
 		}
 	}
 	return 0;
+}
+
+Mat convertToMat(Acmat *srcmat) {
+	Acmat *tmpmat;
+	if (srcmat->col_major) {
+		tmpmat = changeMajor(srcmat);
+	} else {
+		tmpmat = srcmat;
+	}
+	Mat newmat(tmpmat->rows, tmpmat->cols, CV_64FC1, tmpmat->data);
+	newmat.convertTo(newmat, CV_8UC1);
+	if (tmpmat != srcmat) {
+		destroyMat(tmpmat);
+		free(tmpmat);
+	}
+	return newmat;
 }

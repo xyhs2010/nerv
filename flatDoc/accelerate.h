@@ -29,6 +29,7 @@ typedef struct {
 } Acmat;
 
 Acmat *acmatLikeMat(Acmat *origin);
+Acmat *changeMajor(Acmat *pmat);
 void traverseMat(Acmat *mat, void (*func)(Acmat *, int, int));
 void destroyMat(Acmat *mat);
 
