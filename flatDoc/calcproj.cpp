@@ -357,6 +357,16 @@ int blocksSeg(Acblockarray *parray, int (*segments)[2]) {
 	return segnum;
 }
 
+void makeVec(double x, double y, double *vec) {
+	double value = 1;
+	for (int j = 0 ;j < FIT_ORDER; j++) {
+		vec[j] = value;
+		value *= x;
+	}
+	cblas_dcopy(FIT_ORDER, vec, 1, vec + FIT_ORDER, 1);
+	cblas_dscal(FIT_ORDER, y, vec + FIT_ORDER, 1);
+}
+
 void polyfit(Acblockarray *parray, double *zs) {
 	double coefs[4 * FIT_ORDER * FIT_ORDER] = {0};
 	double singlep[4 * FIT_ORDER * FIT_ORDER] = {0};
@@ -369,21 +379,14 @@ void polyfit(Acblockarray *parray, double *zs) {
 		double x, y, z;
 		z = tan(pblock->maxAngle);
 		if (parray->h_major) {
-			x = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
-			y = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
+			x = pblock->centerc * 2.0 / pblock->mat->cols - 1;
+			y = pblock->centerr * 2.0 / pblock->mat->rows - 1;
 		} else {
-			y = (pblock->centerc * 2.0 - pblock->mat->cols) / pblock->mat->cols;
-			x = (pblock->centerr * 2.0 - pblock->mat->rows) / pblock->mat->rows;
+			y = pblock->centerc * 2.0 / pblock->mat->cols - 1;
+			x = pblock->centerr * 2.0 / pblock->mat->rows - 1;
 		}
-		double value = 1;
-		for (int j = 0 ;j < FIT_ORDER; j++) {
-			singlep[j] = value;
-			value *= x;
-		}
+		makeVec(x, y, singlep);
 		double *pnow = singlep;
-		// 第一列
-		cblas_dcopy(FIT_ORDER, pnow, 1, pnow + FIT_ORDER, 1);
-		cblas_dscal(FIT_ORDER, y, pnow + FIT_ORDER, 1);
 
 		// singlez
 		cblas_dcopy(FIT_ORDER * 2, pnow, 1, singlez, 1);
@@ -415,6 +418,47 @@ void polyfit(Acblockarray *parray, double *zs) {
 	int ipiv[2 * FIT_ORDER];
 	// 解线性方程
 	LAPACKE_dgesv(LAPACK_COL_MAJOR, 2 * FIT_ORDER, 1, coefs, 2 * FIT_ORDER, ipiv, zs, 2 * FIT_ORDER);
+}
+
+void rectMat(Acblockarray *parray, Acmat *pdesmat, double *zs) {
+	pdesmat->data = (double *)malloc(pdesmat->cols * pdesmat->rows * sizeof(double));
+	Acmat *psrcmat = parray->mat;
+	double vec[FIT_ORDER * 2] = {0};
+	int dc, dr;
+	double midc, midr, x, y, dy, value;
+	for (int ic = 0; ic < pdesmat->cols; ic++)
+		for (int ir = 0; ir < pdesmat->rows; ir++) {
+			if (parray->h_major) {
+				x = ic * 2.0 / pdesmat->cols - 1;
+				y = ir * 2.0 / pdesmat->rows - 1;
+			} else {
+				x = ir * 2.0 / pdesmat->rows - 1;
+				y = ic * 2.0 / pdesmat->cols - 1;
+			}
+			makeVec(x, y, vec);
+			for (int i = 0; i < 2 * FIT_ORDER; i++)
+				vec[i] *= x;
+			dy = cblas_ddot(2 * FIT_ORDER, vec, 1, zs, 1);
+			makeVec(x, y + dy, vec);
+			for (int i = 0; i < 2 * FIT_ORDER; i++)
+				vec[i] *= x;
+			dy = cblas_ddot(2 * FIT_ORDER, vec, 1, zs, 1);
+			if (parray->h_major) {
+				midc = x;
+				midr = y + dy;
+			} else {
+				midc = y + dy;
+				midr = x;
+			}
+			dc = (midc + 1) * psrcmat->cols / 2;
+			dr = (midr + 1) * psrcmat->rows / 2;
+			if (dc >= psrcmat->cols || dc < 0 || dr >= psrcmat->rows || dr < 0) {
+				setvalue(255, pdesmat, ic, ir);
+			} else {
+				value = valueAt(psrcmat, dc, dr);
+				setvalue(value, pdesmat, ic, ir);
+			}
+		}
 }
 
 inline void localIter(Acmat *pmat, int ic, int ir, int rad, void *handler, void (*callback)(void *, double)) {

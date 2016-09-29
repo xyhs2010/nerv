@@ -12,7 +12,7 @@
 #include "accelerate.h"
 
 #define PROJ_GRIDS_NUM (9)
-#define ANGLE_NUM (16)
+#define ANGLE_NUM (26)
 #define MAX_PAGE (10)
 #define FIT_ORDER (4)
 
@@ -55,7 +55,11 @@ void blocksFilter(Acblockarray *parray);
 
 int blocksSeg(Acblockarray *parray, int (*segments)[2]);
 
+void makeVec(double x, double y, double *vec);
+
 void polyfit(Acblockarray *parray, double *zs);
+
+void rectMat(Acblockarray *parray, Acmat *pdesmat, double *zs);
 
 void traverseMatLocal(Acmat *pmat, Acmat *pout, int rad, void (*callback)(void *, double));
 

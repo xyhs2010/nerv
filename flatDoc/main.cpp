@@ -39,12 +39,13 @@ int main(int argc, char** argv)
     }
 
 	double maxL = src.cols > src.rows ? src.cols : src.rows;
-	if (maxL > 1080) {
-		double rate = 1080 / maxL;
+	if (maxL > 500) {
+		double rate = 500 / maxL;
 		resize(src, src, Size(src.cols * rate, src.rows * rate));
 	}
 	Mat gray;
 	cvtColor(src, gray, CV_BGR2GRAY);
+
 	src = src * 0.5 + 128;
 	Acmat srcmat;
 	if (convertFromMat(gray, &srcmat) < 0) {
@@ -61,15 +62,24 @@ int main(int argc, char** argv)
 	int segments[MAX_PAGE][2];
 	int segnum = blocksSeg(&blockarray, segments);
 
-
 	double zs[2 * FIT_ORDER] = {0};
 	polyfit(&blockarray, zs);
+	for (int i = 0; i < 2 * FIT_ORDER; i++) {
+		zs[i] /= ((i % 4) + 1);
+	}
 
-//	for (int j = 0; j < 8; j++) {
-//		printf("%f, ", zs[j]);
-//	}
-//	printf("\n");
+	for (int j = 0; j < 8; j++) {
+		printf("%f, ", zs[j]);
+	}
+	printf("\n");
 
+	Acmat *pdesmat = acmatLikeMat(&srcmat);
+	rectMat(&blockarray, pdesmat, zs);
+
+	Mat newmat = convertToMat(pdesmat);
+	imshow("des", newmat);
+	destroyMat(pdesmat);
+	free(pdesmat);
 
 	for (int i = 0; i < blockarray.cols * blockarray.rows; i++) {
 		pblock = blockarray.blocks + i;
@@ -87,7 +97,7 @@ int main(int argc, char** argv)
 		line(src, p1, p2, Scalar(0, 0, 255), 1);
 
 		sprintf(text, "(%.2f, %.0f)", pblock->maxAngle, pblock->maxWeight);
-		putText(src, text, Point(pblock->centerc - 20, pblock->centerr + 20), FONT_HERSHEY_SIMPLEX, 0.3, Scalar(0, 0, 255));
+		putText(src, text, Point(pblock->centerc - 10, pblock->centerr + 10), FONT_HERSHEY_SIMPLEX, 0.2, Scalar(0, 0, 255));
 	}
 
 	destroyBlockArray(&blockarray);
