@@ -451,7 +451,8 @@ void rectMat(Acblockarray *parray, Acmat *pdesmat, double *zs) {
 	Acmat *psrcmat = parray->mat;
 	double vec[FIT_ORDER * 2] = {0};
 	int dc, dr;
-	double midc, midr, x, y, dy, value;
+	double midc, midr, x, y, dy;
+	double val1, val2, val3, val4, value;
 	for (int ic = 0; ic < pdesmat->cols; ic++)
 		for (int ir = 0; ir < pdesmat->rows; ir++) {
 			if (parray->h_major) {
@@ -472,12 +473,21 @@ void rectMat(Acblockarray *parray, Acmat *pdesmat, double *zs) {
 				midc = y + dy;
 				midr = x;
 			}
-			dc = (midc + M_PI/2) * psrcmat->cols / M_PI;
-			dr = (midr + M_PI/2) * psrcmat->rows / M_PI;
-			if (dc >= psrcmat->cols || dc < 0 || dr >= psrcmat->rows || dr < 0) {
+			midc = (midc + M_PI/2) * psrcmat->cols / M_PI;
+			midr = (midr + M_PI/2) * psrcmat->rows / M_PI;
+			if (midc >= psrcmat->cols - 1 || midc < 0 || midr >= psrcmat->rows - 1 || midr < 0) {
 				setvalue(255, pdesmat, ic, ir);
 			} else {
-				value = valueAt(psrcmat, dc, dr);
+				dc = midc; dr = midr;
+				midc -= dc; midr -= dr;
+				val1 = valueAt(psrcmat, dc, dr);
+				val2 = valueAt(psrcmat, dc + 1, dr);
+				val3 = valueAt(psrcmat, dc, dr + 1);
+				val4 = valueAt(psrcmat, dc + 1, dr + 1);
+				value = (1-midc) * (1-midr) * val1 +
+						midc * (1-midr) * val2 +
+						(1-midc) * midr * val3 +
+						midc * midr *val4;
 				setvalue(value, pdesmat, ic, ir);
 			}
 		}
