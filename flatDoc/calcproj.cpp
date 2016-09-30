@@ -367,6 +367,16 @@ void makeVec(double x, double y, double *vec) {
 	cblas_dscal(FIT_ORDER, y, vec + FIT_ORDER, 1);
 }
 
+void makeSigVec(double x, double y, double *vec) {
+	double value = x;
+	for (int j = 0; j < FIT_ORDER; j++) {
+		vec[j] = value / (j + 1);
+		value *= x;
+	}
+	cblas_dcopy(FIT_ORDER, vec, 1, vec + FIT_ORDER, 1);
+	cblas_dscal(FIT_ORDER, y, vec + FIT_ORDER, 1);
+}
+
 void polyfit(Acblockarray *parray, double *zs) {
 	double coefs[4 * FIT_ORDER * FIT_ORDER] = {0};
 	double singlep[4 * FIT_ORDER * FIT_ORDER] = {0};
@@ -435,13 +445,9 @@ void rectMat(Acblockarray *parray, Acmat *pdesmat, double *zs) {
 				x = ir * 2.0 / pdesmat->rows - 1;
 				y = ic * 2.0 / pdesmat->cols - 1;
 			}
-			makeVec(x, y, vec);
-			for (int i = 0; i < 2 * FIT_ORDER; i++)
-				vec[i] *= x;
+			makeSigVec(x, y, vec);
 			dy = cblas_ddot(2 * FIT_ORDER, vec, 1, zs, 1);
-			makeVec(x, y + dy, vec);
-			for (int i = 0; i < 2 * FIT_ORDER; i++)
-				vec[i] *= x;
+			makeSigVec(x, y + dy, vec);
 			dy = cblas_ddot(2 * FIT_ORDER, vec, 1, zs, 1);
 			if (parray->h_major) {
 				midc = x;

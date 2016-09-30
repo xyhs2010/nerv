@@ -57,6 +57,8 @@ int blocksSeg(Acblockarray *parray, int (*segments)[2]);
 
 void makeVec(double x, double y, double *vec);
 
+void makeSigVec(double x, double y, double *vec);
+
 void polyfit(Acblockarray *parray, double *zs);
 
 void rectMat(Acblockarray *parray, Acmat *pdesmat, double *zs);

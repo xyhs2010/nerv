@@ -64,9 +64,6 @@ int main(int argc, char** argv)
 
 	double zs[2 * FIT_ORDER] = {0};
 	polyfit(&blockarray, zs);
-	for (int i = 0; i < 2 * FIT_ORDER; i++) {
-		zs[i] /= ((i % 4) + 1);
-	}
 
 	for (int j = 0; j < 8; j++) {
 		printf("%f, ", zs[j]);
