@@ -401,9 +401,11 @@ void polyfit(Acblockarray *parray, double *zs) {
 		if (parray->h_major) {
 			x = pblock->centerc * M_PI / pblock->mat->cols - M_PI/2;
 			y = pblock->centerr * M_PI / pblock->mat->rows - M_PI/2;
+			z = z * pblock->mat->cols / pblock->mat->rows;
 		} else {
 			y = pblock->centerc * M_PI / pblock->mat->cols - M_PI/2;
 			x = pblock->centerr * M_PI / pblock->mat->rows - M_PI/2;
+			z = z * pblock->mat->rows / pblock->mat->cols;
 		}
 		makeVec(x, y, singlep);
 
