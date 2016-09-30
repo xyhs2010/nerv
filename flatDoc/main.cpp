@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 		double x, y;
 		double angle = pblock->maxAngle;
 		if (!blockarray.h_major) {
-			angle += M_PI / 2;
+			angle = M_PI / 2 - angle;
 		}
 		x = 10 * cos(angle); y = 10 * sin(angle);
 		Point p1(pblock->centerc - x, pblock->centerr - y), p2(pblock->centerc + x, pblock->centerr + y);
