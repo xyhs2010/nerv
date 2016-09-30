@@ -36,17 +36,19 @@ Acblockarray createBlocks(Acmat *mat) {
 			blocks[index].radius = radius;
 			blocks[index].startc = ic * blockwid;
 			blocks[index].startr = ir * blockwid;
-			blocks[index].centerc = blocks[index].startc + blocks[index].radius;
-			blocks[index].centerr = blocks[index].startr + blocks[index].radius;
 			if (ic == numc - 1) {
 				blocks[index].endc = mat->cols;
+				blocks[index].centerc = blocks[index].endc - blocks[index].radius;
 			} else {
 				blocks[index].endc = blocks[index].startc + blockwid;
+				blocks[index].centerc = blocks[index].startc + blocks[index].radius;
 			}
 			if (ir == numr - 1) {
 				blocks[index].endr = mat->rows;
+				blocks[index].centerr = blocks[index].endc - blocks[index].radius;
 			} else {
 				blocks[index].endr = blocks[index].startr + blockwid;
+				blocks[index].centerr = blocks[index].startr + blocks[index].radius;
 			}
 			index++;
 		}
