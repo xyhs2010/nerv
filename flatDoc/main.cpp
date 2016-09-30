@@ -8,6 +8,7 @@
 #include "calcproj.h"
 #include <math.h>
 
+#define MAX_L 500
 
 using namespace std;
 using namespace cv;
@@ -39,8 +40,8 @@ int main(int argc, char** argv)
     }
 
 	double maxL = src.cols > src.rows ? src.cols : src.rows;
-	if (maxL > 500) {
-		double rate = 500 / maxL;
+	if (maxL > MAX_L) {
+		double rate = MAX_L / maxL;
 		resize(src, src, Size(src.cols * rate, src.rows * rate));
 	}
 	Mat gray;
@@ -65,10 +66,10 @@ int main(int argc, char** argv)
 	double zs[2 * FIT_ORDER] = {0};
 	polyfit(&blockarray, zs);
 
-	for (int j = 0; j < 8; j++) {
-		printf("%f, ", zs[j]);
-	}
-	printf("\n");
+//	for (int j = 0; j < 2 * FIT_ORDER; j++) {
+//		printf("%.2f\t", zs[j]);
+//	}
+//	printf("\n");
 
 	Acmat *pdesmat = acmatLikeMat(&srcmat);
 	rectMat(&blockarray, pdesmat, zs);
