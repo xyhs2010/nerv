@@ -215,28 +215,32 @@ void blocksFilter(Acblockarray *parray) {
 		angles[i] = (M_PI * i) / ANGLE_NUM;
 	}
 
+	for (int i = 0; i < parray->cols * parray->rows; i++) {
+		(parray->blocks + i)->useful = true;
+		intextfilter(parray->blocks + i);
+	}
+
 	int mini, maxi;
 	double angle;
 	Acblock *pblock;
 	for (int i = 0; i < parray->cols * parray->rows; i++) {
 		pblock = parray->blocks + i;
-		projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
-		maxi = acmaxIndex(stds, ANGLE_NUM);
-		mini = acminIndex(stds, ANGLE_NUM);
-		pblock->maxAngle = angles[maxi];
-		pblock->maxWeight = stds[maxi];
-		pblock->minAngle = angles[mini];
-		pblock->minWeight = stds[mini];
-		pblock->useful = true;
+		if (pblock->useful) {
+			projStdsAtAngles(angles, stds, ANGLE_NUM, pblock);
+			maxi = acmaxIndex(stds, ANGLE_NUM);
+			mini = acminIndex(stds, ANGLE_NUM);
+			pblock->maxAngle = angles[maxi];
+			pblock->maxWeight = stds[maxi];
+			pblock->minAngle = angles[mini];
+			pblock->minWeight = stds[mini];
 
-//		if (stds[maxi] - stds[mini] < 5 ||
-//				stds[maxi] / stds[mini] < 2) {
-//			pblock->useful = false;
-//		}
+//			if (stds[maxi] - stds[mini] < 5 ||
+//					stds[maxi] / stds[mini] < 2) {
+//				pblock->useful = false;
+//			}
+		}
 	}
 
-	for (int i = 0; i < parray->cols * parray->rows; i++)
-		intextfilter(parray->blocks + i);
 
 //	for (int i = 0; i < parray->cols * parray->rows; i++) {
 //		pblock = parray->blocks + i;
