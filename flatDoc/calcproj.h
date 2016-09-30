@@ -14,7 +14,7 @@
 #define PROJ_GRIDS_NUM (9)
 #define ANGLE_NUM (26)
 #define MAX_PAGE (10)
-#define FIT_ORDER (5)
+#define FIT_ORDER (4)
 
 typedef struct {
 	Acmat *mat;
