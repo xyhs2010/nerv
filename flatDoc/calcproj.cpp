@@ -45,7 +45,7 @@ Acblockarray createBlocks(Acmat *mat) {
 			}
 			if (ir == numr - 1) {
 				blocks[index].endr = mat->rows;
-				blocks[index].centerr = blocks[index].endc - blocks[index].radius;
+				blocks[index].centerr = blocks[index].endr - blocks[index].radius;
 			} else {
 				blocks[index].endr = blocks[index].startr + blockwid;
 				blocks[index].centerr = blocks[index].startr + blocks[index].radius;
