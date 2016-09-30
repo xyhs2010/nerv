@@ -283,7 +283,7 @@ void blocksFilter(Acblockarray *parray) {
 				pblock->maxAngle -= M_PI;
 			}
 		} else {
-			pblock->maxAngle -= M_PI / 2;
+			pblock->maxAngle = M_PI - pblock->maxAngle;
 		}
 	}
 }
