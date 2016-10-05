@@ -20,7 +20,7 @@ for i = 1 : wholeL
     end
 end
 
-points = mean(divs(:, 1 : divLength), 1);
+points = round(mean(divs(:, 1 : divLength), 1));
 
 end
 
