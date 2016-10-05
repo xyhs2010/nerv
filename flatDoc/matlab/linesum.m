@@ -21,6 +21,7 @@ for c = sc + 1 : dc
     sum = sum + (tmp - tmpf) * double(mat(tmpf, c));
     sum = sum + (tmpf + 1 - tmp) * double(mat(tmpf + 1, c));
 end
+sum = sum / (dc - sc);
 
 end
 
