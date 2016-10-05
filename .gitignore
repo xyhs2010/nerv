@@ -9,3 +9,6 @@ imageEnhance/out/*
 flatDoc/data/*
 flatDoc/bin/*
 flatDoc/out/*
+
+# matlab
+*.m~
