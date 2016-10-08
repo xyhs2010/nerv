@@ -9,13 +9,15 @@
 #define IMAGEENHANCE_H_
 
 
-#include <opencv2/imgproc.hpp>
 #include <opencv2/core.hpp>
 
-#include <string>
-#include <stdlib.h>
-#include <stdio.h>
+
+#define FILTER_TYPE_AUTO 0
+#define FILTER_TYPE_ENHANCE 1
+#define FILTER_TYPE_GRAY 2
 
 cv::Mat imageEnhance(cv::Mat input);
+
+cv::Mat imageEnhance(cv::Mat input, int filter_type);
 
 #endif /* IMAGEENHANCE_H_ */

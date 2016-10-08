@@ -6,7 +6,13 @@
  */
 
 #include "imageEnhance.h"
-#include <opencv2/highgui.hpp>
+
+#include <opencv2/imgproc.hpp>
+
+#include <string>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include <time.h>
 
 using namespace std;
@@ -19,6 +25,14 @@ float winFunc(float x);
 void calcenhance(int, int);
 
 cv::Mat imageEnhance(cv::Mat input) {
+	return imageEnhance(input, FILTER_TYPE_AUTO);
+}
+
+cv::Mat imageEnhance(cv::Mat input, int filter_type) {
+	if (filter_type & FILTER_TYPE_GRAY) {
+		cvtColor(input, input, CV_BGR2GRAY);
+	}
+
 	int channels = input.channels();
     int maxL = input.rows > input.cols ? input.rows : input.cols;
 	int sigma = 3;
@@ -90,7 +104,10 @@ cv::Mat imageEnhance(cv::Mat input) {
 //  判断是否为白色背景
 	Scalar fil_mean = mean(input);
 	Mat fil_RateGray;
-	cvtColor(fil_Rate, fil_RateGray, CV_BGR2GRAY);
+	if (channels == 3)
+		cvtColor(fil_Rate, fil_RateGray, CV_BGR2GRAY);
+	else
+		fil_RateGray = fil_Rate;
 	fil_valmean = mean(fil_Rate);
 	Scalar fil_mean1 = mean(input, fil_RateGray > fil_valmean[0] * 1.1);
 	bool rb_if = false;
@@ -100,7 +117,7 @@ cv::Mat imageEnhance(cv::Mat input) {
 		rb_if = (fil_mean[0] > fil_mean1[0]);
 	}
 	Mat rb_Result;
-	if (!rb_if) {
+	if (!rb_if && !(filter_type & FILTER_TYPE_ENHANCE)) {
 		printf("can not handle dark image\n");
 		return fil_Result;
 	}
@@ -119,9 +136,11 @@ cv::Mat imageEnhance(cv::Mat input) {
 	Mat rb_Blur1;
 	morphologyEx(rb_Small, rb_Blur1, MORPH_CLOSE, element);
 	Mat rb_Mask = (rb_Blur1 - rb_Blur) > 60;
-	vector<Mat> bgr_planes;
-	split( rb_Mask, bgr_planes);
-	rb_Mask = bgr_planes[0] + bgr_planes[1] + bgr_planes[2];
+	if (channels == 3) {
+		vector<Mat> bgr_planes;
+		split( rb_Mask, bgr_planes);
+		rb_Mask = bgr_planes[0] + bgr_planes[1] + bgr_planes[2];
+	}
 	rb_Blur1.copyTo(rb_Blur, rb_Mask);
 
 	GaussianBlur(rb_Blur, rb_Blur, Size(), sigma, sigma);
