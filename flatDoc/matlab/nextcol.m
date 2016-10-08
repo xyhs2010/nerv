@@ -17,7 +17,7 @@ for i = 1 : length(rows)
             continue;
         end
         expes(expL + 1, 1) = rows(i) - lastrows(i);
-        expes(expL + 1, 2) = 1 / 4;
+        expes(expL + 1, 2) = 1 / 16;
         expL = expL + 1;
     end
     
@@ -31,7 +31,7 @@ for i = 1 : length(rows)
     end
     if (j >= 1)
         expes(expL + 1, 1) = drows(j) - rows(j);
-        expes(expL + 1, 2) = (1 / 4) * (size(src, 1) / ((abs(rows(i) - rows(j)) + 1) * length(rows)));
+        expes(expL + 1, 2) = (1 / 8) * (size(src, 1) / ((abs(rows(i) - rows(j)) + 1) * length(rows)));
         expL = expL + 1;
     end
     if (expL > 0)
