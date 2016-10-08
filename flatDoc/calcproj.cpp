@@ -268,6 +268,8 @@ void blocksFilter(Acblockarray *parray) {
 	int vi = 0, hi = 0;
 	for (int i = 0; i < parray->cols * parray->rows; i++) {
 		pblock = parray->blocks + i;
+		if (!pblock->useful)
+			continue;
 		if (pblock->maxAngle < M_PI / 6 || pblock->maxAngle > M_PI * 5 / 6)
 			hpblock[hi++] = pblock;
 		else if (pblock->maxAngle > M_PI / 3 && pblock->maxAngle < M_PI * 2 / 3)
