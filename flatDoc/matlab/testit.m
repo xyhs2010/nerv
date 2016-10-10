@@ -2,13 +2,47 @@ MAXL = 300;
 COL_STEP = 10;
 MIN_POINT_THRED = 200;
 
-img = imread('../data/1.jpg');
+img = imread('../data/7.jpg');
 rate = MAXL / max(size(img));
-img0 = rgb2gray(imresize(img, rate));
+img0 = double(rgb2gray(imresize(img, rate)));
+img0 = 255 - (37/(255-mean(img0(:)))) * (255 - img0);
+
+vffts = zeros(46, 3);
+for i = 1:3
+    h = round((1/4 + i/8) * size(img0, 2));
+    line = zscore(img0(:, h));
+    tmp = abs(fft(line));
+    vffts(:, i) = tmp(20:65) - tmp(19:64);
+end
+
+hffts = zeros(46, 3);
+for i = 1:3
+    v = round((1/4 + i/8) * size(img0, 1));
+    line = zscore(img0(v, :));
+    tmp = abs(fft(line'));
+    hffts(:, i) = tmp(20:65) - tmp(19:64);
+end
+
+if (mean(abs(hffts(:))) > mean(abs(vffts(:))))
+    img = imrotate(img, 90);
+    img0 = imrotate(img0, 90);
+end
+
 img1 = img0;
 
+% obtain startr
+startr = round(size(img1, 2)/2);
+for i = 1:size(img1, 2)/2
+    line = zscore(double(img0(:, i)));
+    tmp = abs(fft(line));
+    vfft = tmp(20:65) - tmp(19:64);
+    if (mean(abs(vfft(:))) > mean(abs(vffts(:))) * 0.9)
+        startr = i;
+        break;
+    end
+end
+
 % init
-startr = 48;
 points = minpoint(img1(:,startr), MIN_POINT_THRED);
 keypoints = zeros(size(points, 1), floor((size(img1, 2) - startr) / COL_STEP) + 1);
 keypoints(:, 1) = points;
