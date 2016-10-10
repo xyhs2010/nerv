@@ -24,8 +24,9 @@ for i = 1:3
 end
 
 if (mean(abs(hffts(:))) > mean(abs(vffts(:))))
-    img = imrotate(img, 90);
-    img0 = imrotate(img0, 90);
+    img = imrotate(img, 270);
+    img0 = imrotate(img0, 270);
+    vffts = hffts;
 end
 
 img1 = img0;
@@ -90,8 +91,10 @@ end
 % polyfit
 originpoints = keypoints;
 params = -ones(size(keypoints, 1), 4);
+tmp = zeros(size(keypoints, 1), 1);
 for i = 1:size(keypoints, 1)
     if (keypoints(i, 4) > 0)
+        tmp(i) = 1;
         x = startr : COL_STEP : size(img1, 2);
         x = x / size(img1, 2);
         line = originpoints(i,:);
@@ -99,7 +102,6 @@ for i = 1:size(keypoints, 1)
         keypoints(i,1:length(fitres)) = fitres * size(img1, 1) + originpoints(i, 1); 
     end
 end
-tmp = params(:,1);
 params = params(tmp > 0, :);
 rowanchs = keypoints(tmp > 0,1) / size(img1, 1);
 
