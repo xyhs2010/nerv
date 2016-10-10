@@ -2,7 +2,7 @@ MAXL = 300;
 COL_STEP = 10;
 MIN_POINT_THRED = 200;
 
-img = imread('../data/9.jpg');
+img = imread('../data/4.jpg');
 rate = MAXL / max(size(img));
 img0 = double(rgb2gray(imresize(img, rate)));
 img0 = 255 - (37/(255-mean(img0(:)))) * (255 - img0);
@@ -61,6 +61,19 @@ for k = 1 : size(keypoints, 2) - 1
     keypoints(:, k + 1) = points1;
 end
 
+% vetical polifit
+for k = 2 : size(keypoints, 2)
+    line = keypoints(:, k);
+    valid = find(line > 0);
+    if (length(valid) > 4)
+        x = keypoints(valid, 1);
+        fitres = polifitline(x, line(line > 0));
+        keypoints(valid, k) = fitres;
+    end
+end
+
+paintpoints = round(keypoints);
+
 % importance rect
 wrect = ones(size(keypoints));
 wrect(keypoints < 0) = 0;
@@ -93,7 +106,7 @@ originpoints = keypoints;
 params = -ones(size(keypoints, 1), 4);
 tmp = zeros(size(keypoints, 1), 1);
 for i = 1:size(keypoints, 1)
-    if (keypoints(i, 4) > 0)
+    if (keypoints(i, round(size(keypoints, 2)/2)) > 0)
         tmp(i) = 1;
         x = startr : COL_STEP : size(img1, 2);
         x = x / size(img1, 2);
@@ -132,7 +145,6 @@ newimg = uint8(newimg);
 % end
 
 % paint
-paintpoints = round(keypoints);
 paintpoints(paintpoints < 1 & paintpoints >= 0) = 1;
 paintpoints(paintpoints > size(img1, 1)) = size(img1, 1);
 for k = 1:size(paintpoints, 2) - 1

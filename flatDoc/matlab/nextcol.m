@@ -75,7 +75,7 @@ end
 for ir = startr : endr
     if (ir > 0 && ir <= size(src, 1) && sr > 0)
         sum = linesum(src, sc, sr, dc, ir) / (255);
-        if (sum > 0.8)
+        if (sum > 0.78)
             continue;
         end
         if (expweight > 0)
