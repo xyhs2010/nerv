@@ -2,7 +2,7 @@ MAXL = 300;
 COL_STEP = 10;
 MIN_POINT_THRED = 200;
 
-img = imread('../data/7.jpg');
+img = imread('../data/9.jpg');
 rate = MAXL / max(size(img));
 img0 = double(rgb2gray(imresize(img, rate)));
 img0 = 255 - (37/(255-mean(img0(:)))) * (255 - img0);
@@ -37,7 +37,7 @@ for i = 1:size(img1, 2)/2
     line = zscore(double(img0(:, i)));
     tmp = abs(fft(line));
     vfft = tmp(20:65) - tmp(19:64);
-    if (mean(abs(vfft(:))) > mean(abs(vffts(:))) * 0.9)
+    if (mean(abs(vfft(:))) > mean(abs(vffts(:))))
         startr = i;
         break;
     end
