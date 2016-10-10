@@ -8,12 +8,6 @@ if (ur < 0 && dr < 0)
     return;
 end
 if (ur < 0)
-    ur = findvalid(dr, col, 0, wrect);
-end
-if (dr < 0)
-    dr = findvalid(ur, col, 1, wrect);
-end
-if (ur < 0)
     ur = dr;
     dr = -1;
 end

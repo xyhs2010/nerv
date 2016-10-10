@@ -41,8 +41,15 @@ for i = 1 : length(rows)
     
     row = rows(i);
     drow = nextrow(src, col, row, step, expe, expweight);
-    if (j >= 1 && drow ~= -1 && drow < drows(j) + 2)
-        drow = -1;
+    if (j >= 1 && drow ~= -1)
+        if (drow < drows(j) + 2)
+            drow = -1;
+        elseif (lastrows ~= -1)
+            thred = (lastrows(j) - lastrows(i))^2 / 8 + (lastrows(j) - lastrows(i));
+            if (drows(j) - drow > thred)
+            	drow = -1;
+            end
+        end
     end
     drows(i) = drow;
 end
