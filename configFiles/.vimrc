@@ -5,10 +5,10 @@ let mapleader=";"
 set nocompatible
 filetype off
 
-set rtp+=$HOME/.vim/bundle/vundle
+set rtp+=$HOME/.vim/bundle/Vundle.vim
 call vundle#begin()
 
-Plugin 'gmarik/vundle'
+Plugin 'VundleVim/Vundle.vim'
 
 " golang plugin
 Plugin 'jnwhiteh/vim-golang'
