@@ -9,6 +9,11 @@
 " Haishu Xianyu's config
 let mapleader=";"
 set fileencodings=utf-8,cp936
+" 記住上次游標的位置
+if has("autocmd")
+au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+endif
+
 
 let vim_plug_just_installed = 0
 let vim_plug_path = expand('~/.vim/autoload/plug.vim')
