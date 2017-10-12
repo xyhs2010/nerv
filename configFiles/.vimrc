@@ -8,7 +8,7 @@
 
 " Haishu Xianyu's config
 let mapleader=";"
-set fileencodings=utf-8,cp936
+set fileencodings=utf-8,gb18030
 " 記住上次游標的位置
 if has("autocmd")
 au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
